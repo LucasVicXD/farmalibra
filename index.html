@@ -183,6 +183,67 @@
       transform: translateY(-2px);
     }
 
+    .btn-primary-hero:disabled {
+      opacity: 0.55;
+      cursor: wait;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* BARRA DE CARREGAMENTO DA API DE LIBRAS NA TELA INICIAL */
+    .api-loading-box {
+      background: #f0f9ff;
+      border: 1.5px solid #bae6fd;
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      text-align: left;
+      transition: all 0.3s ease;
+    }
+
+    .api-loading-box.ready {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+
+    .api-loading-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: #0369a1;
+      margin-bottom: 8px;
+    }
+
+    .api-loading-box.ready .api-loading-header {
+      color: #15803d;
+    }
+
+    .api-progress-track {
+      width: 100%;
+      height: 10px;
+      background: #dbeafe;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .api-loading-box.ready .api-progress-track {
+      background: #dcfce7;
+    }
+
+    .api-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0284c7 0%, #0d9488 100%);
+      border-radius: 999px;
+      transition: width 0.25s ease, background 0.3s ease;
+    }
+
+    .api-loading-box.ready .api-progress-fill {
+      background: #16a34a;
+    }
+
     /* =====================================================================
        TELA 2: TELA DA PESSOA SURDA
        (Bonequinho Ícaro em cima + 3 Bonequinhos Hosana/Guga horizontais embaixo)
@@ -761,9 +822,21 @@
         <p>
           Toque no botão abaixo para iniciar o atendimento acessível em Libras.
         </p>
-        <button type="button" class="btn-primary-hero" onclick="beginAttendance()">
-          <span>Iniciar Atendimento</span>
-          <span>➔</span>
+
+        <!-- BARRA DE CARREGAMENTO DA API DE LIBRAS -->
+        <div id="apiLoadingBox" class="api-loading-box">
+          <div class="api-loading-header">
+            <span id="apiLoadingLabel">Carregando API de Libras...</span>
+            <span id="apiLoadingPercent">0%</span>
+          </div>
+          <div class="api-progress-track">
+            <div id="apiProgressBarFill" class="api-progress-fill"></div>
+          </div>
+        </div>
+
+        <button type="button" id="btnStartAttendance" class="btn-primary-hero" onclick="beginAttendance()" disabled>
+          <span id="btnStartText">Aguarde o carregamento...</span>
+          <span id="btnStartArrow" style="display:none;">➔</span>
         </button>
         <button type="button" id="btnInstallStart" class="btn-install-app" onclick="triggerInstallApp()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -1671,13 +1744,55 @@
      *************************************************************************/
     let currentNodeKey = 'inicio';
     let activeSequenceId = 0;
+    let visualProgress = 0;
 
     const players = {
-      top:  { id: 'iframeTop',  cardId: 'topCard',  avatar: 'icaro',  loaded: false, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
-      opt0: { id: 'iframeOpt0', cardId: 'optCard0', avatar: 'hosana', loaded: false, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
-      opt1: { id: 'iframeOpt1', cardId: 'optCard1', avatar: 'guga',   loaded: false, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
-      opt2: { id: 'iframeOpt2', cardId: 'optCard2', avatar: 'hosana', loaded: false, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null }
+      top:  { id: 'iframeTop',  cardId: 'topCard',  avatar: 'icaro',  loaded: false, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt0: { id: 'iframeOpt0', cardId: 'optCard0', avatar: 'hosana', loaded: false, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt1: { id: 'iframeOpt1', cardId: 'optCard1', avatar: 'guga',   loaded: false, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt2: { id: 'iframeOpt2', cardId: 'optCard2', avatar: 'hosana', loaded: false, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null }
     };
+
+    function updateApiLoadingProgress() {
+      const list = Object.values(players);
+      const avg = list.reduce((acc, p) => acc + (p.loaded ? 1 : p.progress * 0.9), 0) / list.length;
+      const allLoaded = list.every((p) => p.loaded);
+
+      const computedPercent = allLoaded ? 100 : Math.min(95, Math.round(avg * 100));
+      visualProgress = Math.max(visualProgress, computedPercent);
+
+      const boxEl = document.getElementById('apiLoadingBox');
+      const labelEl = document.getElementById('apiLoadingLabel');
+      const pctEl = document.getElementById('apiLoadingPercent');
+      const fillEl = document.getElementById('apiProgressBarFill');
+      const btnStart = document.getElementById('btnStartAttendance');
+      const btnText = document.getElementById('btnStartText');
+      const btnArrow = document.getElementById('btnStartArrow');
+
+      if (pctEl) pctEl.textContent = `${visualProgress}%`;
+      if (fillEl) fillEl.style.width = `${visualProgress}%`;
+
+      if (allLoaded || visualProgress >= 100) {
+        if (boxEl) boxEl.classList.add('ready');
+        if (labelEl) labelEl.textContent = '✓ API de Libras carregada!';
+        if (btnStart) btnStart.disabled = false;
+        if (btnText) btnText.textContent = 'Iniciar Atendimento';
+        if (btnArrow) btnArrow.style.display = 'inline';
+      }
+    }
+
+    // Progresso visual suave enquanto o motor WebGL inicia o download
+    const warmupInterval = setInterval(() => {
+      const allLoaded = Object.values(players).every((p) => p.loaded);
+      if (allLoaded) {
+        clearInterval(warmupInterval);
+        return;
+      }
+      if (visualProgress < 25) {
+        visualProgress += 3;
+        updateApiLoadingProgress();
+      }
+    }, 350);
 
     function sendUnityMsg(iframeEl, obj, method, params) {
       if (!iframeEl || !iframeEl.contentWindow) return;
@@ -1760,8 +1875,16 @@
       for (const [key, p] of Object.entries(players)) {
         const iframeEl = document.getElementById(p.id);
         if (iframeEl && event.source === iframeEl.contentWindow) {
-          if (data.event === 'on_load_player') {
+          if (data.event === 'update_progress') {
+            const val = Number(data.data);
+            if (!Number.isNaN(val)) {
+              p.progress = Math.max(p.progress, val);
+              updateApiLoadingProgress();
+            }
+          } else if (data.event === 'on_load_player') {
             p.loaded = true;
+            p.progress = 1;
+            updateApiLoadingProgress();
             initPlayerCharacter(key);
             if (p.pendingPlay) {
               const { glosa, onDone } = p.pendingPlay;
