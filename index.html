@@ -878,7 +878,7 @@
           <iframe
             id="iframeTop"
             title="Bonequinho Pergunta (Ícaro)"
-            src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+            data-src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
           ></iframe>
         </div>
       </div>
@@ -892,7 +892,7 @@
               <iframe
                 id="iframeOpt0"
                 title="Bonequinho Opção 1 (Hosana)"
-                src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+                data-src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
               ></iframe>
               <button
                 type="button"
@@ -937,7 +937,7 @@
               <iframe
                 id="iframeOpt1"
                 title="Bonequinho Opção 2 (Guga)"
-                src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+                data-src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
               ></iframe>
               <button
                 type="button"
@@ -982,7 +982,7 @@
               <iframe
                 id="iframeOpt2"
                 title="Bonequinho Opção 3 (Hosana)"
-                src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+                data-src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
               ></iframe>
               <button
                 type="button"
@@ -1773,8 +1773,7 @@
       if (fillEl) fillEl.style.width = `${visualProgress}%`;
 
       if (allLoaded || visualProgress >= 100) {
-        if (boxEl) boxEl.classList.add('ready');
-        if (labelEl) labelEl.textContent = '✓ API de Libras carregada!';
+        if (boxEl) boxEl.style.display = 'none';
         if (btnStart) btnStart.disabled = false;
         if (btnText) btnText.textContent = 'Iniciar Atendimento';
         if (btnArrow) btnArrow.style.display = 'inline';
@@ -2096,14 +2095,16 @@
     }
 
     /*************************************************************************
-     * INSTALAÇÃO DO WEBAPP NO CELULAR / TABLET (PWA)
+     * INSTALAÇÃO DO WEBAPP NO CELULAR / TABLET (PWA) E CARREGAMENTO DOS IFRAMES
      *************************************************************************/
     let deferredInstallPrompt = null;
 
     function isRunningStandalone() {
       return (
         window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.navigator.standalone === true ||
+        document.referrer.includes('android-app://')
       );
     }
 
@@ -2114,33 +2115,72 @@
       if (toast) toast.classList.add('hidden');
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    function showInstallUI() {
       if (isRunningStandalone()) {
         hideInstallUI();
-      } else {
-        // Em celulares/tablets, exibe o aviso flutuante convidando a instalar o app
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobile) {
-          setTimeout(() => {
-            if (!isRunningStandalone()) {
-              document.getElementById('installToast')?.classList.remove('hidden');
-            }
-          }, 1200);
+        return;
+      }
+      const btnStart = document.getElementById('btnInstallStart');
+      const toast = document.getElementById('installToast');
+      if (btnStart) btnStart.style.display = 'inline-flex';
+      if (toast) toast.classList.remove('hidden');
+    }
+
+    function startLoadingVLibrasIframes() {
+      document.querySelectorAll('iframe[data-src]').forEach((iframe) => {
+        if (!iframe.getAttribute('src')) {
+          iframe.setAttribute('src', iframe.getAttribute('data-src'));
         }
+      });
+    }
+
+    // Registra o Service Worker IMEDIATAMENTE (antes de carregar os iframes pesados do Unity)
+    // para que o Chrome/Android libere o evento nativo beforeinstallprompt sem atraso!
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      navigator.serviceWorker
+        .register('./sw.js', { scope: './' })
+        .catch(() => {})
+        .finally(() => {
+          setTimeout(startLoadingVLibrasIframes, 80);
+        });
+    } else {
+      window.addEventListener('DOMContentLoaded', startLoadingVLibrasIframes);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (isRunningStandalone() || localStorage.getItem('farmalibras_installed') === '1') {
+        hideInstallUI();
+      } else {
+        // No iPhone/iPad (Safari), não existe beforeinstallprompt; mostra o aviso de instalação
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isIOS) {
+          setTimeout(() => showInstallUI(), 1000);
+        }
+      }
+
+      // Detecta mudança imediata para modo standalone quando instalado
+      const standaloneMedia = window.matchMedia('(display-mode: standalone)');
+      if (standaloneMedia.addEventListener) {
+        standaloneMedia.addEventListener('change', (e) => {
+          if (e.matches) hideInstallUI();
+        });
       }
     });
 
-    // Quando o navegador Android/Chrome libera o prompt nativo de instalação
+    // Quando o navegador Android / Chrome / Edge libera o instalador nativo do WebApp
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
-      if (!isRunningStandalone()) {
-        document.getElementById('installToast')?.classList.remove('hidden');
-      }
+      // Se o navegador disparou beforeinstallprompt, o app ainda não está instalado neste dispositivo
+      localStorage.removeItem('farmalibras_installed');
+      showInstallUI();
     });
 
     window.addEventListener('appinstalled', () => {
       deferredInstallPrompt = null;
+      try {
+        localStorage.setItem('farmalibras_installed', '1');
+      } catch {}
       hideInstallUI();
     });
 
@@ -2148,11 +2188,18 @@
       document.getElementById('installToast')?.classList.add('hidden');
 
       if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        const { outcome } = await deferredInstallPrompt.userChoice;
-        deferredInstallPrompt = null;
-        if (outcome === 'accepted') {
-          hideInstallUI();
+        try {
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            deferredInstallPrompt = null;
+            try {
+              localStorage.setItem('farmalibras_installed', '1');
+            } catch {}
+            hideInstallUI();
+          }
+        } catch {
+          document.getElementById('installGuideModal')?.classList.remove('hidden');
         }
       } else {
         document.getElementById('installGuideModal')?.classList.remove('hidden');
@@ -2165,12 +2212,6 @@
 
     function closeInstallModal() {
       document.getElementById('installGuideModal')?.classList.add('hidden');
-    }
-
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-      });
     }
   </script>
 
