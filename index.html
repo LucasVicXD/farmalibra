@@ -1,0 +1,1843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0284c7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FarmaLibras" />
+  <title>FarmaLibras — Atendimento em Libras</title>
+  <link rel="manifest" href="./manifest.json" />
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-soft: #e0f2fe;
+      --teal: #0d9488;
+      --green: #16a34a;
+      --green-dark: #15803d;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100dvh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* BARRA SUPERIOR MÍNIMA */
+    .topbar {
+      height: 46px;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+      position: relative;
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 0.96rem;
+      color: var(--primary-dark);
+    }
+
+    .btn-icon-top {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: var(--text);
+      border: 1px solid #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-icon-top:hover {
+      background: #e2e8f0;
+    }
+
+    /* CAMADAS DE TELA (MANTÉM OS 4 BONEQUINHOS 3D CARREGADOS EM MEMÓRIA) */
+    .screens-wrapper {
+      position: relative;
+      width: 100%;
+      height: calc(100dvh - 46px);
+      overflow: hidden;
+    }
+
+    .screen-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .screen-layer.inactive {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.985);
+      z-index: 1;
+    }
+
+    .screen-layer.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+      z-index: 10;
+    }
+
+    /* =====================================================================
+       TELA 1: INÍCIO DO ATENDIMENTO
+       ===================================================================== */
+    #screenStart {
+      background: linear-gradient(145deg, #0369a1 0%, #0284c7 55%, #0d9488 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .start-card {
+      background: #ffffff;
+      border-radius: 28px;
+      max-width: 450px;
+      width: 100%;
+      padding: 36px 28px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+    }
+
+    .start-icon-circle {
+      width: 82px;
+      height: 82px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #e0f2fe 0%, #ccfbf1 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      margin: 0 auto 18px;
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+    }
+
+    .start-card h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 10px;
+    }
+
+    .start-card p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 26px;
+    }
+
+    .btn-primary-hero {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 18px;
+      padding: 18px 24px;
+      font-size: 1.18rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 12px 28px rgba(2, 132, 199, 0.35);
+      transition: transform 0.15s ease;
+    }
+
+    .btn-primary-hero:active, .btn-primary-hero:hover {
+      transform: translateY(-2px);
+    }
+
+    /* =====================================================================
+       TELA 2: TELA DA PESSOA SURDA
+       (Bonequinho Ícaro em cima + 3 Bonequinhos Hosana/Guga horizontais embaixo)
+       ===================================================================== */
+    #screenDeaf {
+      background: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+
+    /* EFEITO DE FOCO VISUAL (CLAREAR QUEM FALA / ESCURECER QUEM AGUARDA) */
+    .focusable-card {
+      position: relative;
+      transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .focusable-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.48);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      z-index: 4;
+      border-radius: inherit;
+    }
+
+    .focusable-card.dimmed {
+      filter: brightness(0.68) saturate(0.75);
+      transform: scale(0.985);
+    }
+
+    .focusable-card.dimmed::after {
+      opacity: 1;
+    }
+
+    .focusable-card.active-signing {
+      filter: brightness(1.02);
+      border-color: #0284c7 !important;
+      box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.32), 0 10px 24px rgba(2, 132, 199, 0.18) !important;
+      transform: scale(1);
+    }
+
+    /* PARTE DE CIMA: BONEQUINHO DO ATENDENTE (ÍCARO) */
+    .top-question-area {
+      flex: 1.02;
+      min-height: 0;
+      background: #ffffff;
+      border-radius: 20px;
+      border: 2.5px solid #bae6fd;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .top-question-header {
+      padding: 7px 12px;
+      background: #f0f9ff;
+      border-bottom: 1px solid #e0f2fe;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 6;
+    }
+
+    .top-question-text {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0369a1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-icon-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #0284c7;
+      border: 1.8px solid #7dd3fc;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s, background 0.15s;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.12);
+    }
+
+    .btn-icon-circle:hover, .btn-icon-circle:active {
+      background: #e0f2fe;
+      transform: scale(1.06);
+    }
+
+    .btn-icon-circle svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2.3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .top-avatar-stage {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      background: radial-gradient(circle at 50% 40%, #f0f9ff 0%, #dbeafe 100%);
+    }
+
+    .top-avatar-stage iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* PARTE DE BAIXO: 3 BONEQUINHOS HORIZONTAIS (HOSANA / GUGA) */
+    .bottom-options-area {
+      flex: 1.18;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .horizontal-options-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .option-card {
+      background: #ffffff;
+      border: 2.5px solid #cbd5e1;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .option-avatar-box {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      background: radial-gradient(circle at 50% 40%, #f8fafc 0%, #e0f2fe 100%);
+      cursor: pointer;
+    }
+
+    .option-avatar-box iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      pointer-events: none;
+    }
+
+    /* Toque no próprio bonequinho repete o sinal */
+    .option-avatar-click-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      background: transparent;
+      border: none;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    /* RODAPÉ DE CADA BONEQUINHO DE RESPOSTA COM TEXTO + APENAS ÍCONES */
+    .option-footer {
+      padding: 7px 8px;
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      z-index: 6;
+    }
+
+    .option-caption {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+      line-height: 1.2;
+      min-height: 2.4em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .option-icon-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-icon-replay {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #f0f9ff;
+      color: #0284c7;
+      border: 1.8px solid #bae6fd;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      flex-shrink: 0;
+    }
+
+    .btn-icon-replay:hover, .btn-icon-replay:active {
+      background: #e0f2fe;
+      transform: scale(1.05);
+    }
+
+    .btn-icon-replay svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2.3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .btn-icon-choose {
+      flex: 1;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--green);
+      color: #ffffff;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(22, 163, 74, 0.25);
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .btn-icon-choose:hover, .btn-icon-choose:active {
+      background: var(--green-dark);
+      transform: scale(1.03);
+    }
+
+    .btn-icon-choose svg {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* =====================================================================
+       TELA 3: TELA DO FARMACÊUTICO (SÓ TEXTO)
+       ===================================================================== */
+    #screenPharmacist {
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .pharmacist-container {
+      max-width: 650px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 100%;
+    }
+
+    .customer-answer-banner {
+      background: #ffffff;
+      border: 2px solid var(--green);
+      border-radius: 20px;
+      padding: 18px 20px;
+      box-shadow: 0 8px 22px rgba(22, 163, 74, 0.1);
+    }
+
+    .answer-label {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .answer-main-text {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.3;
+    }
+
+    .pharmacist-choices-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 18px 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pharmacist-prompt-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .pharmacist-buttons-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .btn-pharmacist-question {
+      width: 100%;
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-pharmacist-question:hover, .btn-pharmacist-question:active {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    .arrow-icon-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .arrow-icon-circle svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* RESPONSIVIDADE EM CELULARES MANTENDO OS 3 BONEQUINHOS HORIZONTAIS */
+    @media (max-width: 640px) {
+      #screenDeaf {
+        padding: 6px;
+        gap: 6px;
+      }
+      .horizontal-options-grid {
+        gap: 6px;
+      }
+      .option-footer {
+        padding: 5px;
+        gap: 5px;
+      }
+      .option-caption {
+        font-size: 0.68rem;
+        min-height: 2.6em;
+      }
+      .btn-icon-replay, .btn-icon-choose {
+        height: 34px;
+        border-radius: 10px;
+      }
+      .btn-icon-replay {
+        width: 34px;
+      }
+      .top-question-text {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA DO TOPO LIMPA -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span>🤟</span>
+      <span>FarmaLibras</span>
+    </div>
+    <div>
+      <button
+        type="button"
+        id="btnBackToStart"
+        class="btn-icon-top"
+        style="display:none;"
+        onclick="resetToStartScreen()"
+        title="Voltar ao Início"
+        aria-label="Voltar ao Início"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="screens-wrapper">
+
+    <!-- ===================================================================
+         TELA 1: INÍCIO
+         =================================================================== -->
+    <section id="screenStart" class="screen-layer active">
+      <div class="start-card">
+        <div class="start-icon-circle">🤟</div>
+        <h1>Atendimento em Libras</h1>
+        <p>
+          Toque no botão abaixo para iniciar o atendimento acessível em Libras.
+        </p>
+        <button type="button" class="btn-primary-hero" onclick="beginAttendance()">
+          <span>Iniciar Atendimento</span>
+          <span>➔</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         TELA 2: VEZ DA PESSOA SURDA
+         Sequência: Cima (Ícaro) -> Esquerda (Hosana) -> Meio (Guga) -> Direita (Hosana) -> Todos claros
+         =================================================================== -->
+    <section id="screenDeaf" class="screen-layer inactive">
+      <!-- PARTE SUPERIOR: BONEQUINHO DO ATENDENTE (ÍCARO) -->
+      <div id="topCard" class="top-question-area focusable-card">
+        <div class="top-question-header">
+          <div id="deafScreenQuestionTitle" class="top-question-text">
+            Olá! O que você deseja?
+          </div>
+          <!-- APENAS ÍCONE DE REPETIR SINAL -->
+          <button
+            type="button"
+            class="btn-icon-circle"
+            onclick="replayTopAvatar()"
+            title="Repetir sinal"
+            aria-label="Repetir sinal"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+          </button>
+        </div>
+        <div class="top-avatar-stage">
+          <iframe
+            id="iframeTop"
+            title="Bonequinho Pergunta (Ícaro)"
+            src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+          ></iframe>
+        </div>
+      </div>
+
+      <!-- PARTE INFERIOR: 3 BONEQUINHOS HORIZONTAIS (HOSANA, GUGA, HOSANA) -->
+      <div class="bottom-options-area">
+        <div class="horizontal-options-grid">
+          <!-- OPÇÃO 1 (ESQUERDA - HOSANA) -->
+          <div class="option-card focusable-card" id="optCard0">
+            <div class="option-avatar-box">
+              <iframe
+                id="iframeOpt0"
+                title="Bonequinho Opção 1 (Hosana)"
+                src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+              ></iframe>
+              <button
+                type="button"
+                class="option-avatar-click-overlay"
+                onclick="playOptionAvatar(0)"
+                aria-label="Repetir sinal da opção 1"
+              ></button>
+            </div>
+            <div class="option-footer">
+              <div class="option-caption" id="optText0">Quero comprar remédio</div>
+              <div class="option-icon-actions">
+                <button
+                  type="button"
+                  class="btn-icon-replay"
+                  onclick="playOptionAvatar(0)"
+                  title="Ver sinal novamente"
+                  aria-label="Ver sinal novamente"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon-choose"
+                  onclick="selectOptionAnswer(0)"
+                  title="Escolher esta opção"
+                  aria-label="Escolher esta opção"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- OPÇÃO 2 (MEIO - GUGA) -->
+          <div class="option-card focusable-card" id="optCard1">
+            <div class="option-avatar-box">
+              <iframe
+                id="iframeOpt1"
+                title="Bonequinho Opção 2 (Guga)"
+                src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+              ></iframe>
+              <button
+                type="button"
+                class="option-avatar-click-overlay"
+                onclick="playOptionAvatar(1)"
+                aria-label="Repetir sinal da opção 2"
+              ></button>
+            </div>
+            <div class="option-footer">
+              <div class="option-caption" id="optText1">Sinto dor, febre ou outro sintoma</div>
+              <div class="option-icon-actions">
+                <button
+                  type="button"
+                  class="btn-icon-replay"
+                  onclick="playOptionAvatar(1)"
+                  title="Ver sinal novamente"
+                  aria-label="Ver sinal novamente"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon-choose"
+                  onclick="selectOptionAnswer(1)"
+                  title="Escolher esta opção"
+                  aria-label="Escolher esta opção"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- OPÇÃO 3 (DIREITA - HOSANA) -->
+          <div class="option-card focusable-card" id="optCard2">
+            <div class="option-avatar-box">
+              <iframe
+                id="iframeOpt2"
+                title="Bonequinho Opção 3 (Hosana)"
+                src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+              ></iframe>
+              <button
+                type="button"
+                class="option-avatar-click-overlay"
+                onclick="playOptionAvatar(2)"
+                aria-label="Repetir sinal da opção 3"
+              ></button>
+            </div>
+            <div class="option-footer">
+              <div class="option-caption" id="optText2">Higiene, curativo ou medir pressão</div>
+              <div class="option-icon-actions">
+                <button
+                  type="button"
+                  class="btn-icon-replay"
+                  onclick="playOptionAvatar(2)"
+                  title="Ver sinal novamente"
+                  aria-label="Ver sinal novamente"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon-choose"
+                  onclick="selectOptionAnswer(2)"
+                  title="Escolher esta opção"
+                  aria-label="Escolher esta opção"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         TELA 3: VEZ DO FARMACÊUTICO (SÓ TEXTO)
+         =================================================================== -->
+    <section id="screenPharmacist" class="screen-layer inactive">
+      <div class="pharmacist-container">
+        <div class="customer-answer-banner">
+          <div class="answer-label">Cliente respondeu:</div>
+          <div id="pharmacistReceivedAnswer" class="answer-main-text">
+            "Quero comprar remédio"
+          </div>
+        </div>
+
+        <div class="pharmacist-choices-card">
+          <div class="pharmacist-prompt-title">
+            Escolha a próxima pergunta ou afirmação:
+          </div>
+          <div id="pharmacistNextButtons" class="pharmacist-buttons-list"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    /*************************************************************************
+     * CONFIGURAÇÃO VLIBRAS 3D (VELOCIDADE 1.5x MAIS RÁPIDA)
+     *************************************************************************/
+    const DICTIONARY_URL = 'https://dicionario2.vlibras.gov.br/2018.3.1/WEBGL/';
+    const SIGN_SPEED = 1.5;
+
+    const DIALOGUE_NODES = {
+      // 1. ABERTURA
+      inicio: {
+        questionPt: 'Olá! Bem-vindo à farmácia. O que você deseja?',
+        questionGlosa: 'OLÁ BEM_VINDO FARMÁCIA QUE VOCÊ DESEJAR',
+        options: [
+          {
+            pt: 'Quero comprar remédio',
+            glosa: 'QUERER COMPRAR&DINHEIRO REMÉDIO',
+            pharmacistNextNodes: [
+              'pedir_receita_ou_nome',
+              'perguntar_generico',
+              'perguntar_quantidade_caixas',
+              'informar_falta_similar'
+            ]
+          },
+          {
+            pt: 'Sinto dor, febre ou outro sintoma',
+            glosa: 'SENTIR DOR&DOER FEBRE SINTOMA PRECISAR AJUDAR',
+            pharmacistNextNodes: [
+              'perguntar_sintoma_geral',
+              'perguntar_sintoma_pele_olhos',
+              'perguntar_tempo_sintoma',
+              'perguntar_alergia'
+            ]
+          },
+          {
+            pt: 'Higiene, curativo ou medir pressão',
+            glosa: 'QUERER PRODUTO HIGIENE&LIMPEZA CURATIVO MEDIR PRESSÃO',
+            pharmacistNextNodes: [
+              'perguntar_qual_produto',
+              'perguntar_servico_farmacia',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      // 2. RECEITA, NOME DO REMÉDIO, GENÉRICO, QUANTIDADE E ESTOQUE
+      pedir_receita_ou_nome: {
+        questionPt: 'Por favor, mostre sua receita ou o nome do remédio.',
+        questionGlosa: 'POR_FAVOR 1S_MOSTRAR_2S RECEITA&PRESCRIÇÃO MÉDICO NOME REMÉDIO',
+        options: [
+          {
+            pt: 'Aqui está minha receita médica',
+            glosa: 'AQUI MEU RECEITA&PRESCRIÇÃO MÉDICO',
+            pharmacistNextNodes: [
+              'perguntar_generico',
+              'perguntar_quantidade_caixas',
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'informar_falta_similar'
+            ]
+          },
+          {
+            pt: 'Não tenho receita, mas sei o nome',
+            glosa: 'NÃO_TER RECEITA&PRESCRIÇÃO SABER NOME REMÉDIO',
+            pharmacistNextNodes: [
+              'perguntar_generico',
+              'perguntar_quantidade_caixas',
+              'perguntar_alergia',
+              'explicar_8_horas'
+            ]
+          },
+          {
+            pt: 'Preciso de remédio controlado',
+            glosa: 'PRECISAR REMÉDIO RECEITA&PRESCRIÇÃO MÉDICO',
+            pharmacistNextNodes: [
+              'perguntar_generico',
+              'explicar_1_dia',
+              'explicar_noite',
+              'perguntar_cpf_desconto'
+            ]
+          }
+        ]
+      },
+
+      perguntar_generico: {
+        questionPt: 'Você prefere o remédio genérico mais barato?',
+        questionGlosa: 'VOCÊ PREFERIR GENÉRICO&REMÉDIO BARATO',
+        options: [
+          {
+            pt: 'Sim, quero o genérico mais barato',
+            glosa: 'SIM QUERER GENÉRICO&REMÉDIO BARATO',
+            pharmacistNextNodes: [
+              'perguntar_quantidade_caixas',
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Não, quero a marca da receita',
+            glosa: 'NÃO QUERER REMÉDIO IGUAL RECEITA&PRESCRIÇÃO',
+            pharmacistNextNodes: [
+              'perguntar_quantidade_caixas',
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Quanto custa cada um?',
+            glosa: 'QUANTO&VALOR CUSTAR REMÉDIO',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_quantidade_caixas',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      perguntar_quantidade_caixas: {
+        questionPt: 'Quantas caixas do remédio você quer levar?',
+        questionGlosa: 'QUANTOS CAIXA REMÉDIO VOCÊ QUERER',
+        options: [
+          {
+            pt: 'Quero levar 1 caixa',
+            glosa: 'QUERER 1 CAIXA REMÉDIO',
+            pharmacistNextNodes: [
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Quero levar 2 caixas',
+            glosa: 'QUERER 2 CAIXA REMÉDIO',
+            pharmacistNextNodes: [
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Quero saber o valor primeiro',
+            glosa: 'QUERER SABER QUANTO&VALOR CUSTAR ANTES',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_generico',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      informar_falta_similar: {
+        questionPt: 'Este remédio está em falta. Aceita um remédio igual (genérico)?',
+        questionGlosa: 'REMÉDIO FALTAR VOCÊ QUERER OUTRO GENÉRICO&REMÉDIO IGUAL',
+        options: [
+          {
+            pt: 'Sim, aceito o remédio substituto',
+            glosa: 'SIM QUERER OUTRO GENÉRICO&REMÉDIO IGUAL',
+            pharmacistNextNodes: [
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Não, prefiro procurar em outra farmácia',
+            glosa: 'NÃO PREFERIR PROCURAR OUTRO FARMÁCIA',
+            pharmacistNextNodes: [
+              'despedida',
+              'inicio'
+            ]
+          },
+          {
+            pt: 'Quero comprar apenas os outros itens',
+            glosa: 'QUERER COMPRAR&DINHEIRO OUTRO PRODUTO',
+            pharmacistNextNodes: [
+              'pedir_receita_ou_nome',
+              'perguntar_qual_produto',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      // 3. SINTOMAS, TRIAGEM E ALERGIA
+      perguntar_sintoma_geral: {
+        questionPt: 'O que você está sentindo?',
+        questionGlosa: 'QUE VOCÊ SENTIR HOJE',
+        options: [
+          {
+            pt: 'Dor de cabeça ou febre',
+            glosa: 'SENTIR DOR&CABEÇA FEBRE',
+            pharmacistNextNodes: [
+              'perguntar_alergia',
+              'perguntar_tempo_sintoma',
+              'explicar_8_horas',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Dor de garganta, tosse ou gripe',
+            glosa: 'SENTIR DOR&DOER GARGANTA TOSSE GRIPE',
+            pharmacistNextNodes: [
+              'perguntar_alergia',
+              'perguntar_tempo_sintoma',
+              'explicar_8_horas',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Dor no estômago, enjoo ou tontura',
+            glosa: 'SENTIR DOR&BARRIGA ESTÔMAGO ENJOO TONTURA',
+            pharmacistNextNodes: [
+              'perguntar_alergia',
+              'explicar_1_dia',
+              'explicar_8_horas',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      perguntar_sintoma_pele_olhos: {
+        questionPt: 'É alergia na pele, ferida ou outro local?',
+        questionGlosa: 'VOCÊ SENTIR COCEIRA FERIDA ALERGIA ONDE',
+        options: [
+          {
+            pt: 'Estou com coceira ou alergia na pele',
+            glosa: 'SENTIR COCEIRA ALERGIA',
+            pharmacistNextNodes: [
+              'explicar_pomada_gotas',
+              'explicar_1_dia',
+              'perguntar_alergia',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Preciso cuidar de uma ferida',
+            glosa: 'PRECISAR CURATIVO POMADA FERIDA',
+            pharmacistNextNodes: [
+              'explicar_pomada_gotas',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Sinto dor no corpo',
+            glosa: 'SENTIR DOR&DOER FEBRE',
+            pharmacistNextNodes: [
+              'perguntar_alergia',
+              'explicar_8_horas',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      perguntar_tempo_sintoma: {
+        questionPt: 'Quando começou esse sintoma?',
+        questionGlosa: 'QUANDO COMEÇAR SENTIR SINTOMA',
+        options: [
+          {
+            pt: 'Começou hoje',
+            glosa: 'COMEÇAR HOJE',
+            pharmacistNextNodes: [
+              'perguntar_alergia',
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Começou há 2 ou 3 dias',
+            glosa: 'COMEÇAR 2 3 DIA',
+            pharmacistNextNodes: [
+              'perguntar_alergia',
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Faz mais de 1 semana',
+            glosa: 'COMEÇAR 1 SEMANA',
+            pharmacistNextNodes: [
+              'recomendar_medico',
+              'perguntar_alergia',
+              'explicar_8_horas'
+            ]
+          }
+        ]
+      },
+
+      recomendar_medico: {
+        questionPt: 'Como faz muitos dias, recomendamos consultar um médico.',
+        questionGlosa: 'PRECISAR PROCURAR MÉDICO AJUDAR SAÚDE',
+        options: [
+          {
+            pt: 'Entendi, vou procurar um médico',
+            glosa: 'ENTENDER PROCURAR MÉDICO OBRIGADO&AGRADECIMENTO',
+            pharmacistNextNodes: [
+              'despedida',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Tem algo leve para aliviar a dor agora?',
+            glosa: 'TER REMÉDIO AJUDAR DOR&DOER AGORA',
+            pharmacistNextNodes: [
+              'perguntar_alergia',
+              'explicar_8_horas',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Quero medir minha pressão antes',
+            glosa: 'QUERER MEDIR PRESSÃO AGORA',
+            pharmacistNextNodes: [
+              'perguntar_servico_farmacia',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          }
+        ]
+      },
+
+      perguntar_alergia: {
+        questionPt: 'Você tem alergia a algum remédio, pressão alta ou diabetes?',
+        questionGlosa: 'VOCÊ TER ALERGIA ALGUM REMÉDIO PRESSÃO DIABETES',
+        options: [
+          {
+            pt: 'Não tenho alergia',
+            glosa: 'NÃO_TER ALERGIA REMÉDIO',
+            pharmacistNextNodes: [
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'explicar_pomada_gotas',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Sim, tenho alergia a remédio',
+            glosa: 'SIM TER ALERGIA REMÉDIO',
+            pharmacistNextNodes: [
+              'pedir_receita_ou_nome',
+              'explicar_1_dia',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Tenho pressão alta ou diabetes',
+            glosa: 'TER PRESSÃO DIABETES',
+            pharmacistNextNodes: [
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      // 4. SERVIÇOS E PRODUTOS DE HIGIENE
+      perguntar_qual_produto: {
+        questionPt: 'Qual produto você está procurando?',
+        questionGlosa: 'QUAL PRODUTO VOCÊ PROCURAR',
+        options: [
+          {
+            pt: 'Preciso de curativo, pomada ou algodão',
+            glosa: 'PRECISAR CURATIVO POMADA FERIDA',
+            pharmacistNextNodes: [
+              'explicar_pomada_gotas',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Preciso de fralda ou item de higiene',
+            glosa: 'PRECISAR FRALDA PRODUTO HIGIENE&LIMPEZA',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Preciso de vitamina',
+            glosa: 'PRECISAR VITAMINA SAÚDE',
+            pharmacistNextNodes: [
+              'explicar_1_dia',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      perguntar_servico_farmacia: {
+        questionPt: 'Qual atendimento você deseja realizar agora?',
+        questionGlosa: 'QUAL ATENDIMENTO VOCÊ QUERER AGORA',
+        options: [
+          {
+            pt: 'Quero medir minha pressão',
+            glosa: 'QUERER MEDIR PRESSÃO',
+            pharmacistNextNodes: [
+              'aguardar_atendimento_sala',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Quero fazer teste de diabetes (glicemia)',
+            glosa: 'QUERER TESTE SANGUE DIABETES',
+            pharmacistNextNodes: [
+              'aguardar_atendimento_sala',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Quero tomar injeção com receita',
+            glosa: 'QUERER INJEÇÃO RECEITA&PRESCRIÇÃO MÉDICO',
+            pharmacistNextNodes: [
+              'aguardar_atendimento_sala',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          }
+        ]
+      },
+
+      aguardar_atendimento_sala: {
+        questionPt: 'Por favor, aguarde um instante que já vamos atender você.',
+        questionGlosa: 'POR_FAVOR ESPERAR AGORA 1S_AJUDAR_2S VOCÊ',
+        options: [
+          {
+            pt: 'Tudo bem, vou aguardar',
+            glosa: 'SIM ESPERAR OBRIGADO&AGRADECIMENTO',
+            pharmacistNextNodes: [
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Quanto custa esse serviço?',
+            glosa: 'QUANTO&VALOR CUSTAR ATENDIMENTO',
+            pharmacistNextNodes: [
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Também quero comprar um remédio',
+            glosa: 'QUERER COMPRAR&DINHEIRO REMÉDIO',
+            pharmacistNextNodes: [
+              'pedir_receita_ou_nome',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      // 5. POSOLOGIA (COMO USAR O REMÉDIO)
+      explicar_8_horas: {
+        questionPt: 'Tome 1 comprimido de 8 em 8 horas com água.',
+        questionGlosa: 'TOMAR&PEGAR 1 COMPRIMIDO 8 HORA ÁGUA',
+        options: [
+          {
+            pt: 'Entendi! Quanto custa?',
+            glosa: 'ENTENDER OBRIGADO&AGRADECIMENTO QUANTO&VALOR CUSTAR',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Tenho dúvida, pode repetir?',
+            glosa: 'TER DÚVIDA PODER&POSSIBILIDADE REPETIR EXPLICAÇÃO',
+            pharmacistNextNodes: [
+              'explicar_8_horas',
+              'explicar_1_dia',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Preciso comprar mais outro item',
+            glosa: 'PRECISAR COMPRAR&DINHEIRO OUTRO PRODUTO',
+            pharmacistNextNodes: [
+              'inicio',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          }
+        ]
+      },
+
+      explicar_1_dia: {
+        questionPt: 'Tome 1 vez por dia, depois de comer.',
+        questionGlosa: 'TOMAR&PEGAR REMÉDIO 1 VEZ DIA DEPOIS COMER',
+        options: [
+          {
+            pt: 'Entendi! Quanto custa?',
+            glosa: 'ENTENDER OBRIGADO&AGRADECIMENTO QUANTO&VALOR CUSTAR',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Devo tomar de manhã ou à noite?',
+            glosa: 'TOMAR&PEGAR MANHÃ OU NOITE',
+            pharmacistNextNodes: [
+              'explicar_noite',
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Tem desconto com CPF?',
+            glosa: 'TER DESCONTO CPF FARMÁCIA',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          }
+        ]
+      },
+
+      explicar_noite: {
+        questionPt: 'Tome 1 comprimido à noite, antes de dormir.',
+        questionGlosa: 'TOMAR&PEGAR 1 COMPRIMIDO NOITE',
+        options: [
+          {
+            pt: 'Perfeito, entendi!',
+            glosa: 'ENTENDER OBRIGADO&AGRADECIMENTO',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Quanto custa o remédio?',
+            glosa: 'QUANTO&VALOR CUSTAR REMÉDIO',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Quero pagar agora',
+            glosa: 'QUERER 1S_PAGAR_2S AGORA',
+            pharmacistNextNodes: [
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          }
+        ]
+      },
+
+      explicar_pomada_gotas: {
+        questionPt: 'Use no local 2 vezes por dia, de manhã e à noite.',
+        questionGlosa: 'USAR 2 VEZ DIA MANHÃ NOITE',
+        options: [
+          {
+            pt: 'Entendi! Vou levar',
+            glosa: 'ENTENDER QUERER COMPRAR&DINHEIRO',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Tem desconto com CPF?',
+            glosa: 'TER DESCONTO CPF FARMÁCIA',
+            pharmacistNextNodes: [
+              'perguntar_cpf_desconto',
+              'perguntar_pagamento'
+            ]
+          },
+          {
+            pt: 'Quero ir para o pagamento',
+            glosa: 'QUERER 1S_PAGAR_2S AGORA',
+            pharmacistNextNodes: [
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          }
+        ]
+      },
+
+      // 6. CPF / DESCONTO E PAGAMENTO
+      perguntar_cpf_desconto: {
+        questionPt: 'Quer informar seu CPF para desconto?',
+        questionGlosa: 'VOCÊ QUERER CPF GANHAR DESCONTO',
+        options: [
+          {
+            pt: 'Sim, quero colocar meu CPF',
+            glosa: 'SIM QUERER MEU CPF DESCONTO',
+            pharmacistNextNodes: [
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Não precisa de CPF',
+            glosa: 'NÃO PRECISAR CPF',
+            pharmacistNextNodes: [
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          },
+          {
+            pt: 'Preciso de nota fiscal',
+            glosa: 'PRECISAR NOTA&FISCAL CPF',
+            pharmacistNextNodes: [
+              'perguntar_pagamento',
+              'despedida'
+            ]
+          }
+        ]
+      },
+
+      perguntar_pagamento: {
+        questionPt: 'Qual será a forma de pagamento?',
+        questionGlosa: 'QUAL FORMA PAGAMENTO CAIXA',
+        options: [
+          {
+            pt: 'Vou pagar com Cartão',
+            glosa: '1S_PAGAR_2S CARTÃO',
+            pharmacistNextNodes: [
+              'despedida',
+              'FINALIZAR_SESSAO'
+            ]
+          },
+          {
+            pt: 'Vou pagar com PIX',
+            glosa: '1S_PAGAR_2S PIX',
+            pharmacistNextNodes: [
+              'despedida',
+              'FINALIZAR_SESSAO'
+            ]
+          },
+          {
+            pt: 'Vou pagar em Dinheiro',
+            glosa: '1S_PAGAR_2S DINHEIRO PRECISAR SACOLA',
+            pharmacistNextNodes: [
+              'despedida',
+              'FINALIZAR_SESSAO'
+            ]
+          }
+        ]
+      },
+
+      // 7. DESPEDIDA
+      despedida: {
+        questionPt: 'Atendimento finalizado! Muito obrigado e boa saúde!',
+        questionGlosa: 'ATENDIMENTO FINALIZAR OBRIGADO&AGRADECIMENTO BOA SAÚDE',
+        options: [
+          {
+            pt: 'Muito obrigado! Tchau!',
+            glosa: 'OBRIGADO&AGRADECIMENTO ATENDIMENTO TCHAU',
+            pharmacistNextNodes: ['FINALIZAR_SESSAO']
+          },
+          {
+            pt: 'Preciso de sacola e nota fiscal',
+            glosa: 'PRECISAR SACOLA NOTA&FISCAL',
+            pharmacistNextNodes: ['FINALIZAR_SESSAO']
+          },
+          {
+            pt: 'Quero pedir mais um item',
+            glosa: 'QUERER COMPRAR&DINHEIRO OUTRO PRODUTO',
+            pharmacistNextNodes: ['inicio', 'pedir_receita_ou_nome', 'perguntar_pagamento']
+          }
+        ]
+      }
+    };
+
+    /*************************************************************************
+     * CONTROLE DOS 4 BONEQUINHOS 3D COM FILA SEQUENCIAL DE FOCO E LUZ:
+     * 1º Cima (Ícaro) -> 2º Esquerda (Hosana) -> 3º Meio (Guga) -> 4º Direita (Hosana)
+     * -> Quando o último termina, todos clareiam!
+     *************************************************************************/
+    let currentNodeKey = 'inicio';
+    let activeSequenceId = 0;
+
+    const players = {
+      top:  { id: 'iframeTop',  cardId: 'topCard',  avatar: 'icaro',  loaded: false, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt0: { id: 'iframeOpt0', cardId: 'optCard0', avatar: 'hosana', loaded: false, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt1: { id: 'iframeOpt1', cardId: 'optCard1', avatar: 'guga',   loaded: false, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt2: { id: 'iframeOpt2', cardId: 'optCard2', avatar: 'hosana', loaded: false, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null }
+    };
+
+    function sendUnityMsg(iframeEl, obj, method, params) {
+      if (!iframeEl || !iframeEl.contentWindow) return;
+      iframeEl.contentWindow.postMessage(
+        { type: 'unity', object: obj, method: method, params: params },
+        '*'
+      );
+    }
+
+    function initPlayerCharacter(key) {
+      const p = players[key];
+      const iframeEl = document.getElementById(p.id);
+      if (!iframeEl) return;
+      sendUnityMsg(iframeEl, 'PlayerManager', 'setBaseUrl', DICTIONARY_URL);
+      sendUnityMsg(iframeEl, 'PlayerManager', 'setSlider', SIGN_SPEED);
+      sendUnityMsg(iframeEl, 'PlayerManager', 'setSubtitlesState', 0);
+      sendUnityMsg(iframeEl, 'PlayerManager', 'Change', p.avatar);
+    }
+
+    function clearAllPlayerCallbacks() {
+      for (const p of Object.values(players)) {
+        p.pendingPlay = null;
+        p.onFinishCallback = null;
+        p.hasStartedPlaying = false;
+        if (p.fallbackTimer) {
+          clearTimeout(p.fallbackTimer);
+          p.fallbackTimer = null;
+        }
+        const iframeEl = document.getElementById(p.id);
+        if (p.loaded && iframeEl) {
+          sendUnityMsg(iframeEl, 'PlayerManager', 'stopAll', '');
+        }
+      }
+    }
+
+    // Executa uma glosa em um bonequinho específico e chama onDone assim que ele terminar os sinais
+    function playPlayerAndWait(key, glosa, onDone) {
+      const p = players[key];
+      const iframeEl = document.getElementById(p.id);
+      if (p.fallbackTimer) clearTimeout(p.fallbackTimer);
+
+      const finishOnce = () => {
+        if (p.fallbackTimer) {
+          clearTimeout(p.fallbackTimer);
+          p.fallbackTimer = null;
+        }
+        const cb = p.onFinishCallback;
+        p.onFinishCallback = null;
+        p.hasStartedPlaying = false;
+        if (cb) cb();
+      };
+
+      p.onFinishCallback = onDone;
+      p.hasStartedPlaying = false;
+
+      if (!p.loaded || !iframeEl) {
+        p.pendingPlay = { glosa, onDone };
+        return;
+      }
+
+      sendUnityMsg(iframeEl, 'PlayerManager', 'setBaseUrl', DICTIONARY_URL);
+      sendUnityMsg(iframeEl, 'PlayerManager', 'setSlider', SIGN_SPEED);
+      sendUnityMsg(iframeEl, 'PlayerManager', 'stopAll', '');
+
+      setTimeout(() => {
+        sendUnityMsg(iframeEl, 'PlayerManager', 'playNow', glosa);
+      }, 70);
+
+      // Tempo máximo de segurança proporcional à quantidade de palavras na velocidade 1.5x
+      const wordCount = glosa.trim().split(/\s+/).length;
+      const maxWaitMs = Math.max(3800, wordCount * 1450 + 1800);
+      p.fallbackTimer = setTimeout(finishOnce, maxWaitMs);
+    }
+
+    // Escuta eventos do Unity WebGL para saber exatamente quando cada bonequinho terminou seu sinal
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || data.type !== 'unity_event') return;
+
+      for (const [key, p] of Object.entries(players)) {
+        const iframeEl = document.getElementById(p.id);
+        if (iframeEl && event.source === iframeEl.contentWindow) {
+          if (data.event === 'on_load_player') {
+            p.loaded = true;
+            initPlayerCharacter(key);
+            if (p.pendingPlay) {
+              const { glosa, onDone } = p.pendingPlay;
+              p.pendingPlay = null;
+              setTimeout(() => playPlayerAndWait(key, glosa, onDone), 450);
+            }
+          } else if (data.event === 'on_playing_state_change' && Array.isArray(data.data)) {
+            const isPlaying = data.data[0] === 'True';
+            const isLoading = data.data[3] === 'True';
+
+            if (isPlaying) {
+              p.hasStartedPlaying = true;
+            } else if (!isPlaying && !isLoading && p.hasStartedPlaying && p.onFinishCallback) {
+              if (p.fallbackTimer) {
+                clearTimeout(p.fallbackTimer);
+                p.fallbackTimer = null;
+              }
+              const cb = p.onFinishCallback;
+              p.onFinishCallback = null;
+              p.hasStartedPlaying = false;
+              setTimeout(() => cb(), 120);
+            }
+          }
+        }
+      }
+    });
+
+    /*************************************************************************
+     * CONTROLE DE ILUMINAÇÃO / FOCO DOS CARTÕES (QUEM FALA CLAREIA, DEMAIS ESCURECEM)
+     *************************************************************************/
+    function setLightingFocus(activeKeyOrAll) {
+      const keys = ['top', 'opt0', 'opt1', 'opt2'];
+      keys.forEach((k) => {
+        const cardEl = document.getElementById(players[k].cardId);
+        if (!cardEl) return;
+
+        if (activeKeyOrAll === 'all') {
+          cardEl.classList.remove('dimmed', 'active-signing');
+        } else if (k === activeKeyOrAll) {
+          cardEl.classList.remove('dimmed');
+          cardEl.classList.add('active-signing');
+        } else {
+          // Quando o de cima fala, os 3 de baixo ficam mais escuros.
+          // Quando um dos de baixo fala, os outros de baixo ficam mais escuros.
+          cardEl.classList.remove('active-signing');
+          if (activeKeyOrAll === 'top') {
+            if (k !== 'top') cardEl.classList.add('dimmed');
+          } else {
+            // Um dos de baixo está falando: escurece os outros de baixo (e suaviza o de cima)
+            cardEl.classList.add('dimmed');
+          }
+        }
+      });
+    }
+
+    // Coreografia completa: Cima -> Esquerda (opt0) -> Meio (opt1) -> Direita (opt2) -> Todos Claros
+    function startTurnChoreography(node) {
+      const seqId = ++activeSequenceId;
+      clearAllPlayerCallbacks();
+
+      // 1º: Foco no bonequinho de cima (os 3 de baixo ficam escuros aguardando)
+      setLightingFocus('top');
+      playPlayerAndWait('top', node.questionGlosa, () => {
+        if (seqId !== activeSequenceId) return;
+
+        // 2º: Cima terminou -> Clareia o 1º da esquerda (opt0), demais continuam escuros
+        setLightingFocus('opt0');
+        playPlayerAndWait('opt0', node.options[0].glosa, () => {
+          if (seqId !== activeSequenceId) return;
+
+          // 3º: Esquerda terminou -> Escurece o 1º e clareia o do meio (opt1)
+          setLightingFocus('opt1');
+          playPlayerAndWait('opt1', node.options[1].glosa, () => {
+            if (seqId !== activeSequenceId) return;
+
+            // 4º: Meio terminou -> Escurece o do meio e clareia o da direita (opt2)
+            setLightingFocus('opt2');
+            playPlayerAndWait('opt2', node.options[2].glosa, () => {
+              if (seqId !== activeSequenceId) return;
+
+              // 5º: Último terminou -> Todos clareiam!
+              setLightingFocus('all');
+            });
+          });
+        });
+      });
+    }
+
+    /*************************************************************************
+     * NAVEGAÇÃO ENTRE TELAS E INTERAÇÕES DO USUÁRIO
+     *************************************************************************/
+    function showScreen(screenId) {
+      ['screenStart', 'screenDeaf', 'screenPharmacist'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (id === screenId) {
+          el.classList.remove('inactive');
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+          el.classList.add('inactive');
+        }
+      });
+
+      const backBtn = document.getElementById('btnBackToStart');
+      backBtn.style.display = screenId === 'screenStart' ? 'none' : 'inline-flex';
+    }
+
+    function beginAttendance() {
+      openDeafTurnScreen('inicio');
+    }
+
+    function openDeafTurnScreen(nodeKey) {
+      currentNodeKey = nodeKey;
+      const node = DIALOGUE_NODES[nodeKey];
+      if (!node) return;
+
+      document.getElementById('deafScreenQuestionTitle').textContent = node.questionPt;
+
+      node.options.forEach((opt, idx) => {
+        const txtEl = document.getElementById(`optText${idx}`);
+        if (txtEl) txtEl.textContent = opt.pt;
+      });
+
+      showScreen('screenDeaf');
+      startTurnChoreography(node);
+    }
+
+    // Repetir manualmente o sinal do bonequinho de cima
+    function replayTopAvatar() {
+      const node = DIALOGUE_NODES[currentNodeKey];
+      if (!node) return;
+      const seqId = ++activeSequenceId;
+      clearAllPlayerCallbacks();
+      setLightingFocus('top');
+      playPlayerAndWait('top', node.questionGlosa, () => {
+        if (seqId !== activeSequenceId) return;
+        setLightingFocus('all');
+      });
+    }
+
+    // Repetir manualmente o sinal de um dos 3 bonequinhos de baixo
+    function playOptionAvatar(optIndex) {
+      const node = DIALOGUE_NODES[currentNodeKey];
+      if (!node || !node.options[optIndex]) return;
+      const opt = node.options[optIndex];
+      const key = `opt${optIndex}`;
+
+      const seqId = ++activeSequenceId;
+      clearAllPlayerCallbacks();
+      setLightingFocus(key);
+
+      playPlayerAndWait(key, opt.glosa, () => {
+        if (seqId !== activeSequenceId) return;
+        setLightingFocus('all');
+      });
+    }
+
+    // Confirmar escolha da resposta -> Vai para a tela do Farmacêutico
+    function selectOptionAnswer(optIndex) {
+      const node = DIALOGUE_NODES[currentNodeKey];
+      if (!node || !node.options[optIndex]) return;
+      const chosenOption = node.options[optIndex];
+
+      activeSequenceId++;
+      clearAllPlayerCallbacks();
+      setLightingFocus('all');
+
+      if (
+        chosenOption.pharmacistNextNodes.length === 1 &&
+        chosenOption.pharmacistNextNodes[0] === 'FINALIZAR_SESSAO'
+      ) {
+        resetToStartScreen();
+        return;
+      }
+
+      document.getElementById('pharmacistReceivedAnswer').textContent = `"${chosenOption.pt}"`;
+
+      const listEl = document.getElementById('pharmacistNextButtons');
+      listEl.innerHTML = chosenOption.pharmacistNextNodes.map((nextKey) => {
+        if (nextKey === 'FINALIZAR_SESSAO') {
+          return `
+            <button type="button" class="btn-pharmacist-question" onclick="resetToStartScreen()">
+              <span>Concluir atendimento e voltar ao início</span>
+              <span class="arrow-icon-circle" style="background:#16a34a;">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+            </button>
+          `;
+        }
+        const targetNode = DIALOGUE_NODES[nextKey];
+        if (!targetNode) return '';
+        return `
+          <button type="button" class="btn-pharmacist-question" onclick="openDeafTurnScreen('${nextKey}')">
+            <span>"${targetNode.questionPt}"</span>
+            <span class="arrow-icon-circle">
+              <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </button>
+        `;
+      }).join('');
+
+      showScreen('screenPharmacist');
+    }
+
+    function resetToStartScreen() {
+      activeSequenceId++;
+      clearAllPlayerCallbacks();
+      showScreen('screenStart');
+    }
+
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
