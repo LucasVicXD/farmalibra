@@ -878,7 +878,7 @@
           <iframe
             id="iframeTop"
             title="Bonequinho Pergunta (Ícaro)"
-            data-src="./player.html"
+            data-src="./player.html?v=6"
           ></iframe>
         </div>
       </div>
@@ -892,7 +892,7 @@
               <iframe
                 id="iframeOpt0"
                 title="Bonequinho Opção 1 (Hosana)"
-                data-src="./player.html"
+                data-src="./player.html?v=6"
               ></iframe>
               <button
                 type="button"
@@ -937,7 +937,7 @@
               <iframe
                 id="iframeOpt1"
                 title="Bonequinho Opção 2 (Guga)"
-                data-src="./player.html"
+                data-src="./player.html?v=6"
               ></iframe>
               <button
                 type="button"
@@ -982,7 +982,7 @@
               <iframe
                 id="iframeOpt2"
                 title="Bonequinho Opção 3 (Hosana)"
-                data-src="./player.html"
+                data-src="./player.html?v=6"
               ></iframe>
               <button
                 type="button"
@@ -1763,7 +1763,7 @@
       const p = players[key];
       const iframeEl = document.getElementById(p.id);
       if (iframeEl && !iframeEl.getAttribute('src')) {
-        iframeEl.setAttribute('src', iframeEl.getAttribute('data-src') || './player.html');
+        iframeEl.setAttribute('src', iframeEl.getAttribute('data-src') || './player.html?v=6');
       }
     }
 
@@ -1926,7 +1926,8 @@
             if (p.retries < 1 && data.data !== 'webgl_unsupported') {
               p.retries++;
               setTimeout(() => {
-                iframeEl.setAttribute('src', (iframeEl.getAttribute('data-src') || './player.html') + '?retry=1');
+                const base = iframeEl.getAttribute('data-src') || './player.html?v=6';
+                iframeEl.setAttribute('src', base + (base.includes('?') ? '&' : '?') + 'retry=1');
               }, 900);
             } else if (!p.loaded) {
               p.failed = true;
@@ -2037,6 +2038,7 @@
     }
 
     function beginAttendance() {
+      document.getElementById('installToast')?.classList.add('hidden');
       openDeafTurnScreen('inicio');
     }
 
@@ -2189,6 +2191,9 @@
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       navigator.serviceWorker
         .register('./sw.js', { scope: './' })
+        .then((reg) => {
+          reg.update().catch(() => {});
+        })
         .catch(() => {})
         .finally(() => {
           setTimeout(startLoadingVLibrasIframes, 80);
