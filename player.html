@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <title>VLibras Player Cacheável</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent !important;
+      }
+      #gameContainer {
+        width: 100vw;
+        height: 100vh;
+        background: transparent !important;
+      }
+      canvas {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gameContainer"></div>
+
+    <script src="./unity-loader.js"></script>
+    <script>
+      // Silencia logs internos ruidosos do Unity mantendo erros críticos visíveis
+      ['log', 'warn', 'info'].forEach((fn) => {
+        const orig = console[fn];
+        console[fn] = (...args) => {
+          if ((Error().stack || '').indexOf('blob:') === -1) {
+            orig.apply(console, args);
+          }
+        };
+      });
+
+      const postEvent = (event, data) => {
+        if (window.parent) {
+          window.parent.postMessage({ type: 'unity_event', event, data }, '*');
+        }
+      };
+
+      // =====================================================================
+      // BANCO INDEXEDDB PERSISTENTE PARA SALVAR A API JÁ DESCOMPACTADA
+      // Assim que carrega 1 vez, fica salva no dispositivo e não precisa
+      // baixar os 20 MB nem descompactar novamente nas próximas aberturas!
+      // =====================================================================
+      const DB_NAME = 'FarmaLibrasVLibrasEngine_v1';
+      const STORE_NAME = 'decompressed_assets';
+      let dbPromise = null;
+
+      function openCacheDB() {
+        if (dbPromise) return dbPromise;
+        dbPromise = new Promise((resolve) => {
+          try {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+              }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+          } catch {
+            resolve(null);
+          }
+        });
+        return dbPromise;
+      }
+
+      async function getCachedAsset(key) {
+        const db = await openCacheDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          try {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          } catch {
+            resolve(null);
+          }
+        });
+      }
+
+      async function setCachedAsset(key, uint8Array) {
+        const db = await openCacheDB();
+        if (!db || !uint8Array) return;
+        return new Promise((resolve) => {
+          try {
+            // Salva uma cópia limpa do ArrayBuffer descompactado
+            const copy = uint8Array.slice().buffer;
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.put(copy, key);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          } catch {
+            resolve(false);
+          }
+        });
+      }
+
+      // Sobrescreve o downloadJob do UnityLoader para usar o IndexedDB persistente
+      if (typeof UnityLoader !== 'undefined') {
+        UnityLoader.downloadJob = function (e, t) {
+          const url = t.parameters.url;
+
+          getCachedAsset(url).then((cachedBuffer) => {
+            if (cachedBuffer && cachedBuffer.byteLength > 0) {
+              const arr = new Uint8Array(cachedBuffer);
+              if (t.parameters.onprogress) {
+                t.parameters.onprogress({
+                  loaded: arr.byteLength,
+                  total: arr.byteLength,
+                  lengthComputable: true
+                });
+              }
+              if (t.parameters.onload) {
+                t.parameters.onload({
+                  loaded: arr.byteLength,
+                  total: arr.byteLength,
+                  lengthComputable: true
+                });
+              }
+              postEvent('cached_hit', url);
+              t.complete(arr);
+              return;
+            }
+
+            // Se ainda não estiver salvo no IndexedDB, baixa com retry automático
+            let attempts = 0;
+            const maxAttempts = 3;
+
+            const doDownload = () => {
+              attempts++;
+              const xhr = new XMLHttpRequest();
+              xhr.open('GET', url, true);
+              xhr.responseType = 'arraybuffer';
+
+              if (t.parameters.onprogress) {
+                xhr.addEventListener('progress', t.parameters.onprogress);
+              }
+              if (t.parameters.onload) {
+                xhr.addEventListener('load', t.parameters.onload);
+              }
+
+              xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300 && xhr.response) {
+                  const rawBytes = new Uint8Array(xhr.response);
+                  UnityLoader.Compression.decompress(rawBytes, function (decompressed) {
+                    // Salva os bytes já descompactados no IndexedDB para nunca mais precisar baixar/descompactar
+                    setCachedAsset(url, decompressed).finally(() => {
+                      // Libera o worker de descompactação Brotli se existir para economizar memória RAM
+                      try {
+                        if (
+                          url.includes('playerweb.data') &&
+                          UnityLoader.Compression.brotli &&
+                          UnityLoader.Compression.brotli.worker
+                        ) {
+                          UnityLoader.Compression.brotli.worker.terminate();
+                          delete UnityLoader.Compression.brotli.worker;
+                        }
+                      } catch {}
+                      t.complete(decompressed);
+                    });
+                  });
+                } else if (attempts < maxAttempts) {
+                  setTimeout(doDownload, 800 * attempts);
+                } else {
+                  postEvent('on_error', 'download_failed');
+                }
+              };
+
+              xhr.onerror = function () {
+                if (attempts < maxAttempts) {
+                  setTimeout(doDownload, 800 * attempts);
+                } else {
+                  postEvent('on_error', 'network_error');
+                }
+              };
+
+              xhr.send();
+            };
+
+            doDownload();
+          });
+        };
+      }
+
+      // Configuração otimizada do VLibras (128 MB de memória inicial com crescimento sob demanda,
+      // evitando falhas de falta de memória / crash ao carregar múltiplos bonequinhos)
+      const VLIBRAS_BASE = 'https://vlibras.gov.br/app/unity/';
+      const playerConfig = {
+        companyName: 'Vlibras',
+        productName: 'Vlibras',
+        dataUrl: VLIBRAS_BASE + 'playerweb.data.unityweb?v=7.12.2',
+        wasmCodeUrl: VLIBRAS_BASE + 'playerweb.wasm.code.unityweb?v=7.12.2',
+        wasmFrameworkUrl: VLIBRAS_BASE + 'playerweb.wasm.framework.unityweb?v=7.12.2',
+        TOTAL_MEMORY: 134217728,
+        graphicsAPI: ['WebGL 2.0', 'WebGL 1.0'],
+        webglContextAttributes: {
+          preserveDrawingBuffer: false,
+          powerPreference: 'low-power'
+        },
+        splashScreenStyle: 'Light',
+        backgroundColor: '#FFFFFF'
+      };
+
+      const configBlobUrl = URL.createObjectURL(
+        new Blob([JSON.stringify(playerConfig)], { type: 'application/json' })
+      );
+
+      let gameInstance = null;
+
+      try {
+        gameInstance = UnityLoader.instantiate('gameContainer', configBlobUrl, {
+          onProgress: (instance, progress) => {
+            postEvent('update_progress', progress);
+          },
+          compatibilityCheck: (instance, accept, reject) => {
+            if (UnityLoader.SystemInfo.hasWebGL) {
+              accept();
+            } else {
+              postEvent('on_error', 'webgl_unsupported');
+              reject();
+            }
+          },
+          Module: {
+            streamingAssetsUrl: () => 'https://vlibras.gov.br/app/StreamingAssets',
+            onAbort: (reason) => {
+              console.error('Unity abort capturado com segurança:', reason);
+              postEvent('on_error', 'wasm_abort');
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Erro ao iniciar UnityLoader:', err);
+        postEvent('on_error', 'instantiate_exception');
+      }
+
+      // Proteção contra perda de contexto WebGL para nunca travar a página
+      window.addEventListener(
+        'webglcontextlost',
+        (e) => {
+          e.preventDefault();
+          postEvent('on_error', 'webgl_context_lost');
+        },
+        true
+      );
+
+      window.addEventListener('message', (t) => {
+        if (!gameInstance) return;
+        const n = t.data;
+        if (!n) return;
+        if (n.type === 'get_unity_instance') return gameInstance;
+        if (n.type === 'unity') {
+          try {
+            gameInstance.SendMessage(n.object, n.method, n.params);
+          } catch {}
+        }
+      });
+
+      window.getUnityInstance = () => gameInstance;
+      window.onPlayingStateChange = (...e) => postEvent('on_playing_state_change', e);
+      window.CounterGloss = (...e) => postEvent('counter_gloss', e);
+      window.onLoadPlayer = () => postEvent('on_load_player');
+      window.GetAvatar = (e) => postEvent('get_avatar', e);
+      window.FinishWelcome = (e) => postEvent('finish_welcome', e);
+      window.SetFullscreen = (t) => gameInstance && gameInstance.SetFullscreen(t);
+    </script>
+  </body>
+</html>

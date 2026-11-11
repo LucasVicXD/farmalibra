@@ -878,7 +878,7 @@
           <iframe
             id="iframeTop"
             title="Bonequinho Pergunta (Ícaro)"
-            data-src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+            data-src="./player.html"
           ></iframe>
         </div>
       </div>
@@ -892,7 +892,7 @@
               <iframe
                 id="iframeOpt0"
                 title="Bonequinho Opção 1 (Hosana)"
-                data-src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+                data-src="./player.html"
               ></iframe>
               <button
                 type="button"
@@ -937,7 +937,7 @@
               <iframe
                 id="iframeOpt1"
                 title="Bonequinho Opção 2 (Guga)"
-                data-src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+                data-src="./player.html"
               ></iframe>
               <button
                 type="button"
@@ -982,7 +982,7 @@
               <iframe
                 id="iframeOpt2"
                 title="Bonequinho Opção 3 (Hosana)"
-                data-src="https://vlibras.gov.br/app/unity/index.html?v=7.12.2"
+                data-src="./player.html"
               ></iframe>
               <button
                 type="button"
@@ -1747,22 +1747,35 @@
     let visualProgress = 0;
 
     const players = {
-      top:  { id: 'iframeTop',  cardId: 'topCard',  avatar: 'icaro',  loaded: false, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
-      opt0: { id: 'iframeOpt0', cardId: 'optCard0', avatar: 'hosana', loaded: false, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
-      opt1: { id: 'iframeOpt1', cardId: 'optCard1', avatar: 'guga',   loaded: false, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
-      opt2: { id: 'iframeOpt2', cardId: 'optCard2', avatar: 'hosana', loaded: false, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null }
+      top:  { id: 'iframeTop',  cardId: 'topCard',  avatar: 'icaro',  loaded: false, failed: false, retries: 0, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt0: { id: 'iframeOpt0', cardId: 'optCard0', avatar: 'hosana', loaded: false, failed: false, retries: 0, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt1: { id: 'iframeOpt1', cardId: 'optCard1', avatar: 'guga',   loaded: false, failed: false, retries: 0, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null },
+      opt2: { id: 'iframeOpt2', cardId: 'optCard2', avatar: 'hosana', loaded: false, failed: false, retries: 0, progress: 0, pendingPlay: null, hasStartedPlaying: false, onFinishCallback: null, fallbackTimer: null }
     };
+
+    const playerLoadOrder = ['top', 'opt0', 'opt1', 'opt2'];
+    let currentLoadingPlayerIdx = -1;
+
+    function loadNextPlayerInQueue() {
+      currentLoadingPlayerIdx++;
+      if (currentLoadingPlayerIdx >= playerLoadOrder.length) return;
+      const key = playerLoadOrder[currentLoadingPlayerIdx];
+      const p = players[key];
+      const iframeEl = document.getElementById(p.id);
+      if (iframeEl && !iframeEl.getAttribute('src')) {
+        iframeEl.setAttribute('src', iframeEl.getAttribute('data-src') || './player.html');
+      }
+    }
 
     function updateApiLoadingProgress() {
       const list = Object.values(players);
       const avg = list.reduce((acc, p) => acc + (p.loaded ? 1 : p.progress * 0.9), 0) / list.length;
       const allLoaded = list.every((p) => p.loaded);
 
-      const computedPercent = allLoaded ? 100 : Math.min(95, Math.round(avg * 100));
+      const computedPercent = allLoaded ? 100 : Math.min(96, Math.round(avg * 100));
       visualProgress = Math.max(visualProgress, computedPercent);
 
       const boxEl = document.getElementById('apiLoadingBox');
-      const labelEl = document.getElementById('apiLoadingLabel');
       const pctEl = document.getElementById('apiLoadingPercent');
       const fillEl = document.getElementById('apiProgressBarFill');
       const btnStart = document.getElementById('btnStartAttendance');
@@ -1773,6 +1786,9 @@
       if (fillEl) fillEl.style.width = `${visualProgress}%`;
 
       if (allLoaded || visualProgress >= 100) {
+        try {
+          localStorage.setItem('farmalibras_engine_cached', '1');
+        } catch {}
         if (boxEl) boxEl.style.display = 'none';
         if (btnStart) btnStart.disabled = false;
         if (btnText) btnText.textContent = 'Iniciar Atendimento';
@@ -1780,18 +1796,18 @@
       }
     }
 
-    // Progresso visual suave enquanto o motor WebGL inicia o download
+    // Progresso visual suave enquanto o motor WebGL inicia
     const warmupInterval = setInterval(() => {
       const allLoaded = Object.values(players).every((p) => p.loaded);
       if (allLoaded) {
         clearInterval(warmupInterval);
         return;
       }
-      if (visualProgress < 25) {
-        visualProgress += 3;
+      if (visualProgress < 20) {
+        visualProgress += 2;
         updateApiLoadingProgress();
       }
-    }, 350);
+    }, 300);
 
     function sendUnityMsg(iframeEl, obj, method, params) {
       if (!iframeEl || !iframeEl.contentWindow) return;
@@ -1804,7 +1820,7 @@
     function initPlayerCharacter(key) {
       const p = players[key];
       const iframeEl = document.getElementById(p.id);
-      if (!iframeEl) return;
+      if (!iframeEl || p.failed) return;
       sendUnityMsg(iframeEl, 'PlayerManager', 'setBaseUrl', DICTIONARY_URL);
       sendUnityMsg(iframeEl, 'PlayerManager', 'setSlider', SIGN_SPEED);
       sendUnityMsg(iframeEl, 'PlayerManager', 'setSubtitlesState', 0);
@@ -1821,7 +1837,7 @@
           p.fallbackTimer = null;
         }
         const iframeEl = document.getElementById(p.id);
-        if (p.loaded && iframeEl) {
+        if (p.loaded && !p.failed && iframeEl) {
           sendUnityMsg(iframeEl, 'PlayerManager', 'stopAll', '');
         }
       }
@@ -1829,7 +1845,9 @@
 
     // Executa uma glosa em um bonequinho específico e chama onDone assim que ele terminar os sinais
     function playPlayerAndWait(key, glosa, onDone) {
-      const p = players[key];
+      // Se um dispositivo com pouca RAM não pôde abrir 4 contextos WebGL simultâneos, usa o bonequinho principal
+      const targetKey = players[key]?.failed && !players.top.failed ? 'top' : key;
+      const p = players[targetKey];
       const iframeEl = document.getElementById(p.id);
       if (p.fallbackTimer) clearTimeout(p.fallbackTimer);
 
@@ -1852,6 +1870,11 @@
         return;
       }
 
+      if (p.failed) {
+        setTimeout(finishOnce, 800);
+        return;
+      }
+
       sendUnityMsg(iframeEl, 'PlayerManager', 'setBaseUrl', DICTIONARY_URL);
       sendUnityMsg(iframeEl, 'PlayerManager', 'setSlider', SIGN_SPEED);
       sendUnityMsg(iframeEl, 'PlayerManager', 'stopAll', '');
@@ -1866,7 +1889,7 @@
       p.fallbackTimer = setTimeout(finishOnce, maxWaitMs);
     }
 
-    // Escuta eventos do Unity WebGL para saber exatamente quando cada bonequinho terminou seu sinal
+    // Escuta eventos do Unity WebGL para saber o progresso, conclusão do carregamento, erros e fim dos sinais
     window.addEventListener('message', (event) => {
       const data = event.data;
       if (!data || data.type !== 'unity_event') return;
@@ -1881,14 +1904,36 @@
               updateApiLoadingProgress();
             }
           } else if (data.event === 'on_load_player') {
+            const wasAlreadyLoaded = p.loaded;
             p.loaded = true;
+            p.failed = false;
             p.progress = 1;
             updateApiLoadingProgress();
             initPlayerCharacter(key);
+
+            if (!wasAlreadyLoaded) {
+              // Inicia o próximo bonequinho da fila após liberar a memória temporária deste
+              setTimeout(loadNextPlayerInQueue, 220);
+            }
+
             if (p.pendingPlay) {
               const { glosa, onDone } = p.pendingPlay;
               p.pendingPlay = null;
               setTimeout(() => playPlayerAndWait(key, glosa, onDone), 450);
+            }
+          } else if (data.event === 'on_error') {
+            // Se houve falha temporária de rede ou limite de memória WebGL no aparelho:
+            if (p.retries < 1 && data.data !== 'webgl_unsupported') {
+              p.retries++;
+              setTimeout(() => {
+                iframeEl.setAttribute('src', (iframeEl.getAttribute('data-src') || './player.html') + '?retry=1');
+              }, 900);
+            } else if (!p.loaded) {
+              p.failed = true;
+              p.loaded = true;
+              p.progress = 1;
+              updateApiLoadingProgress();
+              setTimeout(loadNextPlayerInQueue, 150);
             }
           } else if (data.event === 'on_playing_state_change' && Array.isArray(data.data)) {
             const isPlaying = data.data[0] === 'True';
@@ -2127,11 +2172,16 @@
     }
 
     function startLoadingVLibrasIframes() {
-      document.querySelectorAll('iframe[data-src]').forEach((iframe) => {
-        if (!iframe.getAttribute('src')) {
-          iframe.setAttribute('src', iframe.getAttribute('data-src'));
-        }
-      });
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().catch(() => {});
+      }
+      if (localStorage.getItem('farmalibras_engine_cached') === '1') {
+        const labelEl = document.getElementById('apiLoadingLabel');
+        if (labelEl) labelEl.textContent = 'Iniciando Libras salvo no aparelho...';
+      }
+      if (currentLoadingPlayerIdx === -1) {
+        loadNextPlayerInQueue();
+      }
     }
 
     // Registra o Service Worker IMEDIATAMENTE (antes de carregar os iframes pesados do Unity)
