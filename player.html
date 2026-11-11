@@ -46,18 +46,68 @@
       };
 
       // =====================================================================
-      // CACHE PERSISTENTE EM INDEXEDDB (SALVA A API DESCOMPACTADA NO APARELHO)
-      // Quando aberto via servidor/PWA (http/https), salva os arquivos do
-      // VLibras já descompactados no IndexedDB na 1ª vez para carregar
-      // instantaneamente nas próximas vezes sem baixar novamente.
+      // OTIMIZAÇÃO 1: RESPOSTA INSTANTÂNEA (0ms) PARA O PLAYERWEB.JSON
+      // Evita que cada um dos 4 bonequinhos espere 2 a 4 segundos pela rede
+      // apenas para baixar o JSON de configuração de 380 bytes.
       // =====================================================================
+      const PLAYERWEB_JSON_STR = JSON.stringify({
+        companyName: 'Vlibras',
+        productName: 'Vlibras',
+        dataUrl: 'playerweb.data.unityweb?v=7.12.2',
+        wasmCodeUrl: 'playerweb.wasm.code.unityweb?v=7.12.2',
+        wasmFrameworkUrl: 'playerweb.wasm.framework.unityweb?v=7.12.2',
+        TOTAL_MEMORY: 268435456,
+        graphicsAPI: ['WebGL 1.0'],
+        webglContextAttributes: { preserveDrawingBuffer: false },
+        splashScreenStyle: 'Light',
+        backgroundColor: '#FFFFFF',
+        cacheControl: { default: 'must-revalidate' }
+      });
+
+      const origXhrOpen = XMLHttpRequest.prototype.open;
+      const origXhrSend = XMLHttpRequest.prototype.send;
+
+      XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+        this.__interceptPlayerJson = typeof url === 'string' && url.indexOf('playerweb.json') !== -1;
+        return origXhrOpen.call(this, method, url, ...rest);
+      };
+
+      XMLHttpRequest.prototype.send = function (body) {
+        if (this.__interceptPlayerJson) {
+          Object.defineProperty(this, 'status', { get: () => 200 });
+          Object.defineProperty(this, 'readyState', { get: () => 4 });
+          Object.defineProperty(this, 'responseText', { get: () => PLAYERWEB_JSON_STR });
+          Object.defineProperty(this, 'response', { get: () => PLAYERWEB_JSON_STR });
+          setTimeout(() => {
+            if (typeof this.onload === 'function') this.onload();
+          }, 0);
+          return;
+        }
+        return origXhrSend.call(this, body);
+      };
+
+      // =====================================================================
+      // OTIMIZAÇÃO 2: COMPARTILHAMENTO DE MEMÓRIA RAM + MÓDULO WEBASSEMBLY
+      // ENTRE OS 4 BONEQUINHOS E CACHE PERSISTENTE EM INDEXEDDB
+      // - Lê do IndexedDB apenas 1 única vez (os demais leem da RAM em 0ms)
+      // - Compila o WebAssembly (25 MB) apenas 1 única vez e reutiliza nos 4
+      // =====================================================================
+      function getSharedRoot() {
+        try {
+          if (window.parent && window.parent.location.origin === window.location.origin) {
+            return window.parent;
+          }
+        } catch {}
+        return window;
+      }
+
+      const sharedRoot = getSharedRoot();
       const DB_NAME = 'FarmaLibrasVLibrasEngine_v2';
       const STORE_NAME = 'assets';
-      let dbInstancePromise = null;
 
       function getDB() {
-        if (dbInstancePromise) return dbInstancePromise;
-        dbInstancePromise = new Promise((resolve) => {
+        if (sharedRoot.__vlibrasDBPromise) return sharedRoot.__vlibrasDBPromise;
+        sharedRoot.__vlibrasDBPromise = new Promise((resolve) => {
           try {
             if (!window.indexedDB || location.protocol === 'file:') {
               resolve(null);
@@ -76,7 +126,7 @@
             resolve(null);
           }
         });
-        return dbInstancePromise;
+        return sharedRoot.__vlibrasDBPromise;
       }
 
       async function readFromCache(url) {
@@ -110,60 +160,116 @@
         });
       }
 
+      // Compila o binário WebAssembly (25 MB) apenas 1 vez na janela principal
+      // e instancia instantaneamente nos 4 bonequinhos
+      if (typeof WebAssembly !== 'undefined' && WebAssembly.instantiate) {
+        const origWasmInstantiate = WebAssembly.instantiate.bind(WebAssembly);
+        WebAssembly.instantiate = function (source, importObject) {
+          const isLargeBuffer =
+            source &&
+            (source instanceof Uint8Array ||
+              source instanceof ArrayBuffer ||
+              ArrayBuffer.isView(source)) &&
+            source.byteLength > 1000000;
+
+          if (isLargeBuffer) {
+            try {
+              if (!sharedRoot.__vlibrasWasmModulePromise) {
+                sharedRoot.__vlibrasWasmModulePromise = WebAssembly.compile(source).catch((err) => {
+                  delete sharedRoot.__vlibrasWasmModulePromise;
+                  throw err;
+                });
+              }
+              return sharedRoot.__vlibrasWasmModulePromise.then((compiledModule) =>
+                origWasmInstantiate(compiledModule, importObject).then((instance) => ({
+                  instance: instance,
+                  module: compiledModule
+                }))
+              );
+            } catch {}
+          }
+          return origWasmInstantiate(source, importObject);
+        };
+      }
+
       if (typeof UnityLoader !== 'undefined') {
+        // Evita recalcular hash MD5 em JS sobre 500 KB a cada iframe
+        UnityLoader.loadCode = function (e, t, n) {
+          const r = 'vlibras_fw_' + Math.random().toString(36).slice(2, 10);
+          const o = document.createElement('script');
+          const i = URL.createObjectURL(
+            new Blob(['UnityLoader["' + r + '"]=', e], { type: 'text/javascript' })
+          );
+          UnityLoader.Blobs[i] = n;
+          o.src = i;
+          o.onload = function () {
+            URL.revokeObjectURL(i);
+            t(r);
+            delete o.onload;
+          };
+          document.body.appendChild(o);
+        };
+
         const originalDownloadJob = UnityLoader.downloadJob;
         UnityLoader.downloadJob = function (e, t) {
           const url = t.parameters.url;
-          readFromCache(url)
-            .then((cachedBuffer) => {
-              if (cachedBuffer && cachedBuffer.byteLength > 0) {
-                const decompressed = new Uint8Array(cachedBuffer);
-                if (t.parameters.onprogress) {
-                  t.parameters.onprogress({
-                    loaded: decompressed.byteLength,
-                    total: decompressed.byteLength,
-                    lengthComputable: true
-                  });
-                }
-                if (t.parameters.onload) {
-                  t.parameters.onload({
-                    loaded: decompressed.byteLength,
-                    total: decompressed.byteLength,
-                    lengthComputable: true
-                  });
-                }
-                t.complete(decompressed);
-                return;
-              }
+          if (!sharedRoot.__vlibrasRamAssets) {
+            sharedRoot.__vlibrasRamAssets = {};
+          }
 
-              // Se ainda não está no IndexedDB, baixa normalmente, descompacta e salva
-              const xhr = new XMLHttpRequest();
-              xhr.open('GET', url, true);
-              xhr.responseType = 'arraybuffer';
+          if (!sharedRoot.__vlibrasRamAssets[url]) {
+            sharedRoot.__vlibrasRamAssets[url] = (async () => {
+              const cachedBuffer = await readFromCache(url);
+              if (cachedBuffer && cachedBuffer.byteLength > 0) {
+                return new Uint8Array(cachedBuffer);
+              }
+              return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.responseType = 'arraybuffer';
+                if (t.parameters.onprogress) {
+                  xhr.addEventListener('progress', t.parameters.onprogress);
+                }
+                xhr.onload = function () {
+                  if (xhr.status >= 200 && xhr.status < 300 && xhr.response) {
+                    UnityLoader.Compression.decompress(
+                      new Uint8Array(xhr.response),
+                      function (decompressed) {
+                        writeToCache(url, decompressed).finally(() => {
+                          resolve(decompressed);
+                        });
+                      }
+                    );
+                  } else {
+                    reject(new Error('HTTP ' + xhr.status));
+                  }
+                };
+                xhr.onerror = () => reject(new Error('Network error'));
+                xhr.send();
+              });
+            })().catch((err) => {
+              delete sharedRoot.__vlibrasRamAssets[url];
+              throw err;
+            });
+          }
+
+          sharedRoot.__vlibrasRamAssets[url]
+            .then((decompressed) => {
               if (t.parameters.onprogress) {
-                xhr.addEventListener('progress', t.parameters.onprogress);
+                t.parameters.onprogress({
+                  loaded: decompressed.byteLength,
+                  total: decompressed.byteLength,
+                  lengthComputable: true
+                });
               }
               if (t.parameters.onload) {
-                xhr.addEventListener('load', t.parameters.onload);
+                t.parameters.onload({
+                  loaded: decompressed.byteLength,
+                  total: decompressed.byteLength,
+                  lengthComputable: true
+                });
               }
-              xhr.onload = function () {
-                if (xhr.status >= 200 && xhr.status < 300 && xhr.response) {
-                  UnityLoader.Compression.decompress(
-                    new Uint8Array(xhr.response),
-                    function (decompressed) {
-                      writeToCache(url, decompressed).finally(() => {
-                        t.complete(decompressed);
-                      });
-                    }
-                  );
-                } else {
-                  originalDownloadJob.call(UnityLoader, e, t);
-                }
-              };
-              xhr.onerror = function () {
-                originalDownloadJob.call(UnityLoader, e, t);
-              };
-              xhr.send();
+              t.complete(decompressed);
             })
             .catch(() => {
               originalDownloadJob.call(UnityLoader, e, t);

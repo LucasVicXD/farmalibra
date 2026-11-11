@@ -1,11 +1,12 @@
-const APP_CACHE = 'farmalibras-v6';
+const APP_CACHE = 'farmalibras-v8';
 const VLIBRAS_CACHE = 'farmalibras-vlibras-cache-v1';
 
 const APP_ASSETS = [
   './',
   './index.html',
   './player.html',
-  './player.html?v=6',
+  './player.html?v=7',
+  './player.html?v=8',
   './unity-loader.js',
   './manifest.json',
   './icon-192.png',

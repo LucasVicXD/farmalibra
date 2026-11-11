@@ -627,6 +627,82 @@
       stroke-linejoin: round;
     }
 
+    .phase-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--primary-dark);
+      background: #e0f2fe;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 4px;
+    }
+
+    .pharmacist-custom-box {
+      background: #f0f9ff;
+      border: 1.5px solid #bae6fd;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pharmacist-custom-label {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #0369a1;
+    }
+
+    .posology-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .posology-chip {
+      background: #ffffff;
+      border: 1.5px solid #7dd3fc;
+      color: #0369a1;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .posology-chip:hover, .posology-chip.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+
+    .pharmacist-custom-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pharmacist-custom-input {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1.5px solid #93c5fd;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+    }
+
+    .pharmacist-custom-input:focus {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18);
+    }
+
     /* RESPONSIVIDADE EM CELULARES MANTENDO OS 3 BONEQUINHOS HORIZONTAIS */
     @media (max-width: 640px) {
       #screenDeaf {
@@ -878,7 +954,7 @@
           <iframe
             id="iframeTop"
             title="Bonequinho Pergunta (Ícaro)"
-            data-src="./player.html?v=6"
+            data-src="./player.html?v=7"
           ></iframe>
         </div>
       </div>
@@ -892,7 +968,7 @@
               <iframe
                 id="iframeOpt0"
                 title="Bonequinho Opção 1 (Hosana)"
-                data-src="./player.html?v=6"
+                data-src="./player.html?v=7"
               ></iframe>
               <button
                 type="button"
@@ -937,7 +1013,7 @@
               <iframe
                 id="iframeOpt1"
                 title="Bonequinho Opção 2 (Guga)"
-                data-src="./player.html?v=6"
+                data-src="./player.html?v=7"
               ></iframe>
               <button
                 type="button"
@@ -982,7 +1058,7 @@
               <iframe
                 id="iframeOpt2"
                 title="Bonequinho Opção 3 (Hosana)"
-                data-src="./player.html?v=6"
+                data-src="./player.html?v=7"
               ></iframe>
               <button
                 type="button"
@@ -1055,683 +1131,562 @@
     const SIGN_SPEED = 1.5;
 
     const DIALOGUE_NODES = {
-      // 1. ABERTURA
+      // =====================================================================
+      // FASE 1: ACOLHIMENTO E TRIAGEM PRINCIPAL
+      // Direciona o cliente rapidamente para o funil correto sem perguntas extras
+      // =====================================================================
       inicio: {
-        questionPt: 'Olá! Bem-vindo à farmácia. O que você deseja?',
-        questionGlosa: 'OLÁ BEM_VINDO FARMÁCIA QUE VOCÊ DESEJAR',
+        phase: 'Fase 1 • Acolhimento e Triagem',
+        questionPt: 'Olá! Bem-vindo. Como posso te ajudar hoje?',
+        questionGlosa: 'OLÁ BEM_VINDO COMO PODER&POSSIBILIDADE 1S_AJUDAR_2S HOJE',
         options: [
           {
-            pt: 'Quero comprar remédio',
-            glosa: 'QUERER COMPRAR&DINHEIRO REMÉDIO',
+            pt: 'Já sei o que quero (Remédios com/sem receita, produtos de higiene)',
+            glosa: 'JÁ SABER QUE QUERER REMÉDIO PRODUTO HIGIENE&LIMPEZA',
             pharmacistNextNodes: [
-              'pedir_receita_ou_nome',
-              'perguntar_generico',
-              'perguntar_quantidade_caixas',
-              'informar_falta_similar'
+              'trilha_a_identificar_produto',
+              'trilha_a_generico_ou_marca',
+              'fase3_orientacao_posologia'
             ]
           },
           {
-            pt: 'Sinto dor, febre ou outro sintoma',
-            glosa: 'SENTIR DOR&DOER FEBRE SINTOMA PRECISAR AJUDAR',
+            pt: 'Sinto algo / Preciso de indicação (Sintomas, dores, dúvidas)',
+            glosa: 'SENTIR SINTOMA DOR&DOER DÚVIDA PRECISAR AJUDAR',
             pharmacistNextNodes: [
-              'perguntar_sintoma_geral',
-              'perguntar_sintoma_pele_olhos',
-              'perguntar_tempo_sintoma',
-              'perguntar_alergia'
+              'trilha_b_onde_problema',
+              'trilha_b_filtro_seguranca'
             ]
           },
           {
-            pt: 'Higiene, curativo ou medir pressão',
-            glosa: 'QUERER PRODUTO HIGIENE&LIMPEZA CURATIVO MEDIR PRESSÃO',
+            pt: 'Serviços da farmácia (Medir pressão, glicemia, injeção)',
+            glosa: 'QUERER ATENDIMENTO FARMÁCIA MEDIR PRESSÃO DIABETES INJEÇÃO',
             pharmacistNextNodes: [
-              'perguntar_qual_produto',
-              'perguntar_servico_farmacia',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
+              'trilha_c_qual_servico',
+              'trilha_c_aguardar_sala'
             ]
           }
         ]
       },
 
-      // 2. RECEITA, NOME DO REMÉDIO, GENÉRICO, QUANTIDADE E ESTOQUE
-      pedir_receita_ou_nome: {
-        questionPt: 'Por favor, mostre sua receita ou o nome do remédio.',
-        questionGlosa: 'POR_FAVOR 1S_MOSTRAR_2S RECEITA&PRESCRIÇÃO MÉDICO NOME REMÉDIO',
+      // =====================================================================
+      // FASE 2 — TRILHA A: O CLIENTE JÁ SABE O QUE QUER (COMPRA DIRETA)
+      // =====================================================================
+      trilha_a_identificar_produto: {
+        phase: 'Fase 2 • Trilha A (Compra Direta)',
+        questionPt: 'Por favor, mostre a receita ou digite/mostre o nome do produto.',
+        questionGlosa: 'POR_FAVOR 1S_MOSTRAR_2S RECEITA&PRESCRIÇÃO OU MOSTRAR NOME PRODUTO',
         options: [
           {
-            pt: 'Aqui está minha receita médica',
+            pt: 'Aqui está a receita',
             glosa: 'AQUI MEU RECEITA&PRESCRIÇÃO MÉDICO',
             pharmacistNextNodes: [
-              'perguntar_generico',
-              'perguntar_quantidade_caixas',
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'informar_falta_similar'
+              'trilha_a_generico_ou_marca',
+              'trilha_a_quantidade',
+              'fase3_orientacao_posologia',
+              'trilha_a_em_falta'
             ]
           },
           {
-            pt: 'Não tenho receita, mas sei o nome',
-            glosa: 'NÃO_TER RECEITA&PRESCRIÇÃO SABER NOME REMÉDIO',
+            pt: 'Sei apenas o nome',
+            glosa: 'SABER APENAS NOME PRODUTO',
             pharmacistNextNodes: [
-              'perguntar_generico',
-              'perguntar_quantidade_caixas',
-              'perguntar_alergia',
-              'explicar_8_horas'
+              'trilha_a_generico_ou_marca',
+              'trilha_a_quantidade',
+              'fase3_orientacao_posologia',
+              'trilha_a_em_falta'
             ]
           },
           {
-            pt: 'Preciso de remédio controlado',
-            glosa: 'PRECISAR REMÉDIO RECEITA&PRESCRIÇÃO MÉDICO',
+            pt: 'Quero ver opções/marcas',
+            glosa: 'QUERER VER OUTRO MARCA PRODUTO',
             pharmacistNextNodes: [
-              'perguntar_generico',
-              'explicar_1_dia',
-              'explicar_noite',
-              'perguntar_cpf_desconto'
+              'trilha_a_generico_ou_marca',
+              'trilha_a_quantidade',
+              'fase3_orientacao_posologia'
             ]
           }
         ]
       },
 
-      perguntar_generico: {
-        questionPt: 'Você prefere o remédio genérico mais barato?',
-        questionGlosa: 'VOCÊ PREFERIR GENÉRICO&REMÉDIO BARATO',
+      trilha_a_generico_ou_marca: {
+        phase: 'Fase 2 • Trilha A (Compra Direta)',
+        questionPt: 'Prefere o genérico (mais barato) ou o de marca?',
+        questionGlosa: 'VOCÊ PREFERIR GENÉRICO&REMÉDIO BARATO OU MARCA',
         options: [
           {
-            pt: 'Sim, quero o genérico mais barato',
-            glosa: 'SIM QUERER GENÉRICO&REMÉDIO BARATO',
+            pt: 'Prefiro o genérico (mais barato)',
+            glosa: 'PREFERIR GENÉRICO&REMÉDIO BARATO',
             pharmacistNextNodes: [
-              'perguntar_quantidade_caixas',
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
+              'trilha_a_quantidade',
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Não, quero a marca da receita',
-            glosa: 'NÃO QUERER REMÉDIO IGUAL RECEITA&PRESCRIÇÃO',
+            pt: 'Prefiro o de marca',
+            glosa: 'PREFERIR REMÉDIO MARCA',
             pharmacistNextNodes: [
-              'perguntar_quantidade_caixas',
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
+              'trilha_a_quantidade',
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Quanto custa cada um?',
-            glosa: 'QUANTO&VALOR CUSTAR REMÉDIO',
+            pt: 'Qual o valor de cada um?',
+            glosa: 'QUANTO&VALOR CUSTAR GENÉRICO&REMÉDIO MARCA',
             pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_quantidade_caixas',
-              'perguntar_pagamento'
+              'trilha_a_quantidade',
+              'fase3_orientacao_posologia'
             ]
           }
         ]
       },
 
-      perguntar_quantidade_caixas: {
-        questionPt: 'Quantas caixas do remédio você quer levar?',
-        questionGlosa: 'QUANTOS CAIXA REMÉDIO VOCÊ QUERER',
+      trilha_a_quantidade: {
+        phase: 'Fase 2 • Trilha A (Quantidade → Fase 3)',
+        questionPt: 'Quantas caixas ou unidades você deseja levar?',
+        questionGlosa: 'QUANTOS CAIXA PRODUTO VOCÊ QUERER',
         options: [
           {
-            pt: 'Quero levar 1 caixa',
-            glosa: 'QUERER 1 CAIXA REMÉDIO',
+            pt: 'Quero 1 unidade / caixa',
+            glosa: 'QUERER 1 CAIXA PRODUTO',
             pharmacistNextNodes: [
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Quero levar 2 caixas',
-            glosa: 'QUERER 2 CAIXA REMÉDIO',
+            pt: 'Quero 2 unidades / caixas',
+            glosa: 'QUERER 2 CAIXA PRODUTO',
             pharmacistNextNodes: [
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Quero saber o valor primeiro',
-            glosa: 'QUERER SABER QUANTO&VALOR CUSTAR ANTES',
+            pt: 'Quero 3 ou mais unidades',
+            glosa: 'QUERER 3 MAIS CAIXA PRODUTO',
             pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_generico',
-              'perguntar_pagamento'
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
             ]
           }
         ]
       },
 
-      informar_falta_similar: {
-        questionPt: 'Este remédio está em falta. Aceita um remédio igual (genérico)?',
-        questionGlosa: 'REMÉDIO FALTAR VOCÊ QUERER OUTRO GENÉRICO&REMÉDIO IGUAL',
+      trilha_a_em_falta: {
+        phase: 'Fase 2 • Trilha A (Substituição)',
+        questionPt: 'Este produto está em falta. Aceita o genérico ou similar equivalente?',
+        questionGlosa: 'PRODUTO FALTAR VOCÊ QUERER OUTRO GENÉRICO&REMÉDIO IGUAL',
         options: [
           {
-            pt: 'Sim, aceito o remédio substituto',
+            pt: 'Sim, aceito o substituto',
             glosa: 'SIM QUERER OUTRO GENÉRICO&REMÉDIO IGUAL',
             pharmacistNextNodes: [
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
+              'trilha_a_quantidade',
+              'fase3_orientacao_posologia'
             ]
           },
           {
-            pt: 'Não, prefiro procurar em outra farmácia',
-            glosa: 'NÃO PREFERIR PROCURAR OUTRO FARMÁCIA',
+            pt: 'Quero ver outra opção',
+            glosa: 'QUERER VER OUTRO PRODUTO',
             pharmacistNextNodes: [
-              'despedida',
-              'inicio'
+              'trilha_a_generico_ou_marca',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Quero comprar apenas os outros itens',
-            glosa: 'QUERER COMPRAR&DINHEIRO OUTRO PRODUTO',
+            pt: 'Não, obrigado',
+            glosa: 'NÃO OBRIGADO&AGRADECIMENTO',
             pharmacistNextNodes: [
-              'pedir_receita_ou_nome',
-              'perguntar_qual_produto',
-              'perguntar_pagamento'
+              'fase3_carrinho_mais_itens',
+              'fase4_despedida'
             ]
           }
         ]
       },
 
-      // 3. SINTOMAS, TRIAGEM E ALERGIA
-      perguntar_sintoma_geral: {
-        questionPt: 'O que você está sentindo?',
-        questionGlosa: 'QUE VOCÊ SENTIR HOJE',
+      // =====================================================================
+      // FASE 2 — TRILHA B: O CLIENTE PRECISA DE INDICAÇÃO (SINTOMAS)
+      // Filtro de segurança unificado ANTES de perguntar tempo ou indicar algo
+      // =====================================================================
+      trilha_b_onde_problema: {
+        phase: 'Fase 2 • Trilha B (Sintomas)',
+        questionPt: 'Onde é o problema? (Dor/Febre, Gripes, Estômago, Pele/Alergia)',
+        questionGlosa: 'ONDE PROBLEMA DOR&DOER FEBRE GRIPE ESTÔMAGO ALERGIA',
         options: [
           {
-            pt: 'Dor de cabeça ou febre',
-            glosa: 'SENTIR DOR&CABEÇA FEBRE',
+            pt: 'Dor, Febre ou Gripe/Garganta',
+            glosa: 'SENTIR DOR&CABEÇA FEBRE GRIPE GARGANTA TOSSE',
             pharmacistNextNodes: [
-              'perguntar_alergia',
-              'perguntar_tempo_sintoma',
-              'explicar_8_horas',
-              'perguntar_pagamento'
+              'trilha_b_filtro_seguranca'
             ]
           },
           {
-            pt: 'Dor de garganta, tosse ou gripe',
-            glosa: 'SENTIR DOR&DOER GARGANTA TOSSE GRIPE',
+            pt: 'Estômago, enjoo ou barriga',
+            glosa: 'SENTIR DOR&BARRIGA ESTÔMAGO ENJOO',
             pharmacistNextNodes: [
-              'perguntar_alergia',
-              'perguntar_tempo_sintoma',
-              'explicar_8_horas',
-              'perguntar_pagamento'
+              'trilha_b_filtro_seguranca'
             ]
           },
           {
-            pt: 'Dor no estômago, enjoo ou tontura',
-            glosa: 'SENTIR DOR&BARRIGA ESTÔMAGO ENJOO TONTURA',
+            pt: 'Pele, alergia ou ferida',
+            glosa: 'SENTIR COCEIRA ALERGIA FERIDA',
             pharmacistNextNodes: [
-              'perguntar_alergia',
-              'explicar_1_dia',
-              'explicar_8_horas',
-              'perguntar_pagamento'
+              'trilha_b_filtro_seguranca'
             ]
           }
         ]
       },
 
-      perguntar_sintoma_pele_olhos: {
-        questionPt: 'É alergia na pele, ferida ou outro local?',
-        questionGlosa: 'VOCÊ SENTIR COCEIRA FERIDA ALERGIA ONDE',
+      trilha_b_filtro_seguranca: {
+        phase: 'Fase 2 • Trilha B (Filtro de Segurança Unificado)',
+        questionPt: 'Antes de indicar algo: você tem alergia a remédios, pressão alta, diabetes ou está grávida?',
+        questionGlosa: 'ANTES VOCÊ TER ALERGIA REMÉDIO PRESSÃO DIABETES OU GRÁVIDA',
         options: [
           {
-            pt: 'Estou com coceira ou alergia na pele',
-            glosa: 'SENTIR COCEIRA ALERGIA',
+            pt: 'Não tenho nada',
+            glosa: 'NÃO_TER NADA ALERGIA DOENÇA',
             pharmacistNextNodes: [
-              'explicar_pomada_gotas',
-              'explicar_1_dia',
-              'perguntar_alergia',
-              'perguntar_pagamento'
+              'trilha_b_quantos_dias'
             ]
           },
           {
-            pt: 'Preciso cuidar de uma ferida',
-            glosa: 'PRECISAR CURATIVO POMADA FERIDA',
+            pt: 'Sim, tenho alergia/doença crônica',
+            glosa: 'SIM TER ALERGIA DOENÇA PRESSÃO DIABETES',
             pharmacistNextNodes: [
-              'explicar_pomada_gotas',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
+              'trilha_b_quantos_dias',
+              'trilha_b_recomendar_medico'
             ]
           },
           {
-            pt: 'Sinto dor no corpo',
-            glosa: 'SENTIR DOR&DOER FEBRE',
+            pt: 'Estou grávida/amamentando',
+            glosa: 'SIM GRÁVIDA AMAMENTAR BEBÊ',
             pharmacistNextNodes: [
-              'perguntar_alergia',
-              'explicar_8_horas',
-              'perguntar_pagamento'
+              'trilha_b_quantos_dias',
+              'trilha_b_recomendar_medico'
             ]
           }
         ]
       },
 
-      perguntar_tempo_sintoma: {
-        questionPt: 'Quando começou esse sintoma?',
-        questionGlosa: 'QUANDO COMEÇAR SENTIR SINTOMA',
+      trilha_b_quantos_dias: {
+        phase: 'Fase 2 • Trilha B (Tempo do Sintoma)',
+        questionPt: 'Há quantos dias está sentindo isso?',
+        questionGlosa: 'QUANDO COMEÇAR SENTIR QUANTOS DIA',
         options: [
           {
-            pt: 'Começou hoje',
-            glosa: 'COMEÇAR HOJE',
+            pt: 'Começou hoje ou ontem (recente)',
+            glosa: 'COMEÇAR HOJE ONTEM',
             pharmacistNextNodes: [
-              'perguntar_alergia',
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_pagamento'
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Começou há 2 ou 3 dias',
+            pt: 'Faz 2 a 5 dias',
             glosa: 'COMEÇAR 2 3 DIA',
             pharmacistNextNodes: [
-              'perguntar_alergia',
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_pagamento'
+              'fase3_orientacao_posologia',
+              'trilha_b_recomendar_medico'
             ]
           },
           {
-            pt: 'Faz mais de 1 semana',
-            glosa: 'COMEÇAR 1 SEMANA',
+            pt: 'Mais de 7 dias',
+            glosa: 'MAIS 7 DIA SEMANA',
             pharmacistNextNodes: [
-              'recomendar_medico',
-              'perguntar_alergia',
-              'explicar_8_horas'
+              'trilha_b_recomendar_medico',
+              'fase3_orientacao_posologia'
             ]
           }
         ]
       },
 
-      recomendar_medico: {
-        questionPt: 'Como faz muitos dias, recomendamos consultar um médico.',
-        questionGlosa: 'PRECISAR PROCURAR MÉDICO AJUDAR SAÚDE',
+      trilha_b_recomendar_medico: {
+        phase: 'Fase 2 • Trilha B (> 7 dias: Recomendação Médica)',
+        questionPt: 'Como faz mais de 7 dias, recomendamos consultar um médico.',
+        questionGlosa: 'MAIS 7 DIA PRECISAR PROCURAR MÉDICO AJUDAR SAÚDE',
         options: [
           {
             pt: 'Entendi, vou procurar um médico',
             glosa: 'ENTENDER PROCURAR MÉDICO OBRIGADO&AGRADECIMENTO',
             pharmacistNextNodes: [
-              'despedida',
-              'perguntar_pagamento'
+              'fase3_carrinho_mais_itens',
+              'fase4_despedida'
             ]
           },
           {
-            pt: 'Tem algo leve para aliviar a dor agora?',
+            pt: 'Tem algo leve para aliviar agora?',
             glosa: 'TER REMÉDIO AJUDAR DOR&DOER AGORA',
             pharmacistNextNodes: [
-              'perguntar_alergia',
-              'explicar_8_horas',
-              'perguntar_pagamento'
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Quero medir minha pressão antes',
-            glosa: 'QUERER MEDIR PRESSÃO AGORA',
+            pt: 'Quero usar um serviço da farmácia',
+            glosa: 'QUERER ATENDIMENTO FARMÁCIA MEDIR PRESSÃO',
             pharmacistNextNodes: [
-              'perguntar_servico_farmacia',
-              'perguntar_pagamento',
-              'despedida'
+              'trilha_c_qual_servico',
+              'fase4_cpf_convenio'
             ]
           }
         ]
       },
 
-      perguntar_alergia: {
-        questionPt: 'Você tem alergia a algum remédio, pressão alta ou diabetes?',
-        questionGlosa: 'VOCÊ TER ALERGIA ALGUM REMÉDIO PRESSÃO DIABETES',
+      // =====================================================================
+      // FASE 2 — TRILHA C: SERVIÇOS DA FARMÁCIA
+      // =====================================================================
+      trilha_c_qual_servico: {
+        phase: 'Fase 2 • Trilha C (Serviços)',
+        questionPt: 'Qual serviço precisa?',
+        questionGlosa: 'QUAL ATENDIMENTO FARMÁCIA VOCÊ PRECISAR',
         options: [
           {
-            pt: 'Não tenho alergia',
-            glosa: 'NÃO_TER ALERGIA REMÉDIO',
+            pt: 'Pressão/Glicemia',
+            glosa: 'QUERER MEDIR PRESSÃO TESTE DIABETES',
             pharmacistNextNodes: [
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'explicar_pomada_gotas',
-              'perguntar_pagamento'
+              'trilha_c_aguardar_sala'
             ]
           },
           {
-            pt: 'Sim, tenho alergia a remédio',
-            glosa: 'SIM TER ALERGIA REMÉDIO',
-            pharmacistNextNodes: [
-              'pedir_receita_ou_nome',
-              'explicar_1_dia',
-              'perguntar_pagamento'
-            ]
-          },
-          {
-            pt: 'Tenho pressão alta ou diabetes',
-            glosa: 'TER PRESSÃO DIABETES',
-            pharmacistNextNodes: [
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_pagamento'
-            ]
-          }
-        ]
-      },
-
-      // 4. SERVIÇOS E PRODUTOS DE HIGIENE
-      perguntar_qual_produto: {
-        questionPt: 'Qual produto você está procurando?',
-        questionGlosa: 'QUAL PRODUTO VOCÊ PROCURAR',
-        options: [
-          {
-            pt: 'Preciso de curativo, pomada ou algodão',
-            glosa: 'PRECISAR CURATIVO POMADA FERIDA',
-            pharmacistNextNodes: [
-              'explicar_pomada_gotas',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
-            ]
-          },
-          {
-            pt: 'Preciso de fralda ou item de higiene',
-            glosa: 'PRECISAR FRALDA PRODUTO HIGIENE&LIMPEZA',
-            pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          },
-          {
-            pt: 'Preciso de vitamina',
-            glosa: 'PRECISAR VITAMINA SAÚDE',
-            pharmacistNextNodes: [
-              'explicar_1_dia',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
-            ]
-          }
-        ]
-      },
-
-      perguntar_servico_farmacia: {
-        questionPt: 'Qual atendimento você deseja realizar agora?',
-        questionGlosa: 'QUAL ATENDIMENTO VOCÊ QUERER AGORA',
-        options: [
-          {
-            pt: 'Quero medir minha pressão',
-            glosa: 'QUERER MEDIR PRESSÃO',
-            pharmacistNextNodes: [
-              'aguardar_atendimento_sala',
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          },
-          {
-            pt: 'Quero fazer teste de diabetes (glicemia)',
-            glosa: 'QUERER TESTE SANGUE DIABETES',
-            pharmacistNextNodes: [
-              'aguardar_atendimento_sala',
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          },
-          {
-            pt: 'Quero tomar injeção com receita',
+            pt: 'Injeção (com receita)',
             glosa: 'QUERER INJEÇÃO RECEITA&PRESCRIÇÃO MÉDICO',
             pharmacistNextNodes: [
-              'aguardar_atendimento_sala',
-              'perguntar_pagamento',
-              'despedida'
+              'trilha_c_aguardar_sala'
+            ]
+          },
+          {
+            pt: 'Curativo',
+            glosa: 'PRECISAR CURATIVO FERIDA',
+            pharmacistNextNodes: [
+              'trilha_c_aguardar_sala'
             ]
           }
         ]
       },
 
-      aguardar_atendimento_sala: {
-        questionPt: 'Por favor, aguarde um instante que já vamos atender você.',
-        questionGlosa: 'POR_FAVOR ESPERAR AGORA 1S_AJUDAR_2S VOCÊ',
+      trilha_c_aguardar_sala: {
+        phase: 'Fase 2 • Trilha C (Sala de Atendimento → Fase 4)',
+        questionPt: 'Por favor, aguarde um instante na sala de atendimento.',
+        questionGlosa: 'POR_FAVOR ESPERAR SALA ATENDIMENTO AGORA 1S_AJUDAR_2S',
         options: [
           {
             pt: 'Tudo bem, vou aguardar',
-            glosa: 'SIM ESPERAR OBRIGADO&AGRADECIMENTO',
+            glosa: 'SIM ESPERAR SALA OBRIGADO&AGRADECIMENTO',
             pharmacistNextNodes: [
-              'perguntar_pagamento',
-              'despedida'
+              'fase4_cpf_convenio',
+              'fase4_pagamento',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Quanto custa esse serviço?',
-            glosa: 'QUANTO&VALOR CUSTAR ATENDIMENTO',
-            pharmacistNextNodes: [
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          },
-          {
-            pt: 'Também quero comprar um remédio',
-            glosa: 'QUERER COMPRAR&DINHEIRO REMÉDIO',
-            pharmacistNextNodes: [
-              'pedir_receita_ou_nome',
-              'perguntar_pagamento'
-            ]
-          }
-        ]
-      },
-
-      // 5. POSOLOGIA (COMO USAR O REMÉDIO)
-      explicar_8_horas: {
-        questionPt: 'Tome 1 comprimido de 8 em 8 horas com água.',
-        questionGlosa: 'TOMAR&PEGAR 1 COMPRIMIDO 8 HORA ÁGUA',
-        options: [
-          {
-            pt: 'Entendi! Quanto custa?',
-            glosa: 'ENTENDER OBRIGADO&AGRADECIMENTO QUANTO&VALOR CUSTAR',
-            pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          },
-          {
-            pt: 'Tenho dúvida, pode repetir?',
-            glosa: 'TER DÚVIDA PODER&POSSIBILIDADE REPETIR EXPLICAÇÃO',
-            pharmacistNextNodes: [
-              'explicar_8_horas',
-              'explicar_1_dia',
-              'perguntar_pagamento'
-            ]
-          },
-          {
-            pt: 'Preciso comprar mais outro item',
-            glosa: 'PRECISAR COMPRAR&DINHEIRO OUTRO PRODUTO',
+            pt: 'Quero adicionar mais itens',
+            glosa: 'QUERER ADICIONAR MAIS PRODUTO',
             pharmacistNextNodes: [
               'inicio',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
-            ]
-          }
-        ]
-      },
-
-      explicar_1_dia: {
-        questionPt: 'Tome 1 vez por dia, depois de comer.',
-        questionGlosa: 'TOMAR&PEGAR REMÉDIO 1 VEZ DIA DEPOIS COMER',
-        options: [
-          {
-            pt: 'Entendi! Quanto custa?',
-            glosa: 'ENTENDER OBRIGADO&AGRADECIMENTO QUANTO&VALOR CUSTAR',
-            pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          },
-          {
-            pt: 'Devo tomar de manhã ou à noite?',
-            glosa: 'TOMAR&PEGAR MANHÃ OU NOITE',
-            pharmacistNextNodes: [
-              'explicar_noite',
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
-            ]
-          },
-          {
-            pt: 'Tem desconto com CPF?',
-            glosa: 'TER DESCONTO CPF FARMÁCIA',
-            pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          }
-        ]
-      },
-
-      explicar_noite: {
-        questionPt: 'Tome 1 comprimido à noite, antes de dormir.',
-        questionGlosa: 'TOMAR&PEGAR 1 COMPRIMIDO NOITE',
-        options: [
-          {
-            pt: 'Perfeito, entendi!',
-            glosa: 'ENTENDER OBRIGADO&AGRADECIMENTO',
-            pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          },
-          {
-            pt: 'Quanto custa o remédio?',
-            glosa: 'QUANTO&VALOR CUSTAR REMÉDIO',
-            pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
-            ]
-          },
-          {
-            pt: 'Quero pagar agora',
-            glosa: 'QUERER 1S_PAGAR_2S AGORA',
-            pharmacistNextNodes: [
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          }
-        ]
-      },
-
-      explicar_pomada_gotas: {
-        questionPt: 'Use no local 2 vezes por dia, de manhã e à noite.',
-        questionGlosa: 'USAR 2 VEZ DIA MANHÃ NOITE',
-        options: [
-          {
-            pt: 'Entendi! Vou levar',
-            glosa: 'ENTENDER QUERER COMPRAR&DINHEIRO',
-            pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento',
-              'despedida'
-            ]
-          },
-          {
-            pt: 'Tem desconto com CPF?',
-            glosa: 'TER DESCONTO CPF FARMÁCIA',
-            pharmacistNextNodes: [
-              'perguntar_cpf_desconto',
-              'perguntar_pagamento'
+              'fase4_cpf_convenio'
             ]
           },
           {
             pt: 'Quero ir para o pagamento',
             glosa: 'QUERER 1S_PAGAR_2S AGORA',
             pharmacistNextNodes: [
-              'perguntar_pagamento',
-              'despedida'
+              'fase4_cpf_convenio',
+              'fase4_pagamento'
             ]
           }
         ]
       },
 
-      // 6. CPF / DESCONTO E PAGAMENTO
-      perguntar_cpf_desconto: {
-        questionPt: 'Quer informar seu CPF para desconto?',
-        questionGlosa: 'VOCÊ QUERER CPF GANHAR DESCONTO',
+      // =====================================================================
+      // FASE 3: ORIENTAÇÃO E CARRINHO (MÓDULO ÚNICO)
+      // Nó genérico de orientação que serve para qualquer produto + decisão de caixa
+      // =====================================================================
+      fase3_orientacao_posologia: {
+        phase: 'Fase 3 • Orientação e Posologia (Módulo Único)',
+        questionPt: 'Vou explicar como usar o produto. Ficou claro?',
+        questionGlosa: 'AGORA EXPLICAR COMO USAR REMÉDIO CERTO VOCÊ ENTENDER CLARO',
         options: [
           {
-            pt: 'Sim, quero colocar meu CPF',
-            glosa: 'SIM QUERER MEU CPF DESCONTO',
+            pt: 'Entendi, obrigado!',
+            glosa: 'ENTENDER CLARO OBRIGADO&AGRADECIMENTO',
             pharmacistNextNodes: [
-              'perguntar_pagamento',
-              'despedida'
+              'fase3_carrinho_mais_itens',
+              'fase4_cpf_convenio'
             ]
           },
           {
-            pt: 'Não precisa de CPF',
-            glosa: 'NÃO PRECISAR CPF',
+            pt: 'Pode repetir, por favor?',
+            glosa: 'POR_FAVOR PODER&POSSIBILIDADE REPETIR EXPLICAÇÃO',
             pharmacistNextNodes: [
-              'perguntar_pagamento',
-              'despedida'
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
             ]
           },
           {
-            pt: 'Preciso de nota fiscal',
-            glosa: 'PRECISAR NOTA&FISCAL CPF',
+            pt: 'Tem algum efeito colateral?',
+            glosa: 'TER ALGUM PERIGO REAÇÃO SONO REMÉDIO',
             pharmacistNextNodes: [
-              'perguntar_pagamento',
-              'despedida'
+              'fase3_efeito_colateral',
+              'fase3_carrinho_mais_itens'
             ]
           }
         ]
       },
 
-      perguntar_pagamento: {
-        questionPt: 'Qual será a forma de pagamento?',
+      fase3_efeito_colateral: {
+        phase: 'Fase 3 • Dúvida sobre Efeito Colateral',
+        questionPt: 'Pode dar leve sono ou reação rara. Use apenas conforme orientado. Ficou claro?',
+        questionGlosa: 'PODER&POSSIBILIDADE TER SONO REAÇÃO USAR CERTO COMO EXPLICAR CLARO',
+        options: [
+          {
+            pt: 'Entendi, obrigado!',
+            glosa: 'ENTENDER CLARO OBRIGADO&AGRADECIMENTO',
+            pharmacistNextNodes: [
+              'fase3_carrinho_mais_itens',
+              'fase4_cpf_convenio'
+            ]
+          },
+          {
+            pt: 'Pode repetir, por favor?',
+            glosa: 'POR_FAVOR PODER&POSSIBILIDADE REPETIR EXPLICAÇÃO',
+            pharmacistNextNodes: [
+              'fase3_orientacao_posologia',
+              'fase3_carrinho_mais_itens'
+            ]
+          }
+        ]
+      },
+
+      fase3_carrinho_mais_itens: {
+        phase: 'Fase 3 • Carrinho',
+        questionPt: 'Deseja adicionar mais algum produto ou podemos ir para o caixa?',
+        questionGlosa: 'VOCÊ QUERER ADICIONAR MAIS PRODUTO OU 1S_PAGAR_2S CAIXA',
+        options: [
+          {
+            pt: 'Quero pagar agora',
+            glosa: 'QUERER 1S_PAGAR_2S AGORA CAIXA',
+            pharmacistNextNodes: [
+              'fase4_cpf_convenio',
+              'fase4_pagamento'
+            ]
+          },
+          {
+            pt: 'Quero adicionar mais itens',
+            glosa: 'QUERER ADICIONAR MAIS PRODUTO VOLTAR INÍCIO',
+            pharmacistNextNodes: [
+              'inicio',
+              'trilha_a_identificar_produto'
+            ]
+          }
+        ]
+      },
+
+      // =====================================================================
+      // FASE 4: CHECKOUT UNIFICADO (FIM DE TODOS OS CAMINHOS)
+      // Todas as trilhas desembocam neste módulo único
+      // =====================================================================
+      fase4_cpf_convenio: {
+        phase: 'Fase 4 • Checkout Unificado (CPF / Convênio)',
+        questionPt: 'Tem convênio ou deseja informar o CPF para desconto?',
+        questionGlosa: 'VOCÊ TER CONVÊNIO OU QUERER MOSTRAR CPF GANHAR DESCONTO',
+        options: [
+          {
+            pt: 'Sim, vou digitar/mostrar',
+            glosa: 'SIM QUERER MOSTRAR MEU CPF CONVÊNIO DESCONTO',
+            pharmacistNextNodes: [
+              'fase4_pagamento'
+            ]
+          },
+          {
+            pt: 'Não precisa',
+            glosa: 'NÃO PRECISAR CPF OBRIGADO&AGRADECIMENTO',
+            pharmacistNextNodes: [
+              'fase4_pagamento'
+            ]
+          }
+        ]
+      },
+
+      fase4_pagamento: {
+        phase: 'Fase 4 • Checkout Unificado (Pagamento)',
+        questionPt: 'Qual a forma de pagamento?',
         questionGlosa: 'QUAL FORMA PAGAMENTO CAIXA',
         options: [
           {
-            pt: 'Vou pagar com Cartão',
+            pt: 'Cartão / Aproximação',
             glosa: '1S_PAGAR_2S CARTÃO',
             pharmacistNextNodes: [
-              'despedida',
-              'FINALIZAR_SESSAO'
+              'fase4_sacola_nota',
+              'fase4_despedida'
             ]
           },
           {
-            pt: 'Vou pagar com PIX',
+            pt: 'PIX',
             glosa: '1S_PAGAR_2S PIX',
             pharmacistNextNodes: [
-              'despedida',
+              'fase4_sacola_nota',
+              'fase4_despedida'
+            ]
+          },
+          {
+            pt: 'Dinheiro',
+            glosa: '1S_PAGAR_2S DINHEIRO',
+            pharmacistNextNodes: [
+              'fase4_sacola_nota',
+              'fase4_despedida'
+            ]
+          }
+        ]
+      },
+
+      fase4_sacola_nota: {
+        phase: 'Fase 4 • Checkout Unificado (Sacola e Nota Fiscal)',
+        questionPt: 'Pronto! Precisa de sacola ou da nota fiscal impressa?',
+        questionGlosa: 'PRONTO VOCÊ PRECISAR SACOLA OU NOTA&FISCAL',
+        options: [
+          {
+            pt: 'Sim, os dois',
+            glosa: 'SIM QUERER DOIS SACOLA NOTA&FISCAL',
+            pharmacistNextNodes: [
+              'fase4_despedida',
               'FINALIZAR_SESSAO'
             ]
           },
           {
-            pt: 'Vou pagar em Dinheiro',
-            glosa: '1S_PAGAR_2S DINHEIRO PRECISAR SACOLA',
+            pt: 'Só a sacola',
+            glosa: 'QUERER APENAS SACOLA',
             pharmacistNextNodes: [
-              'despedida',
+              'fase4_despedida',
+              'FINALIZAR_SESSAO'
+            ]
+          },
+          {
+            pt: 'Não preciso, tchau!',
+            glosa: 'NÃO PRECISAR OBRIGADO&AGRADECIMENTO TCHAU',
+            pharmacistNextNodes: [
+              'fase4_despedida',
               'FINALIZAR_SESSAO'
             ]
           }
         ]
       },
 
-      // 7. DESPEDIDA
-      despedida: {
-        questionPt: 'Atendimento finalizado! Muito obrigado e boa saúde!',
-        questionGlosa: 'ATENDIMENTO FINALIZAR OBRIGADO&AGRADECIMENTO BOA SAÚDE',
+      fase4_despedida: {
+        phase: 'Fase 4 • Despedida',
+        questionPt: 'Muito obrigado! Boa saúde e até logo.',
+        questionGlosa: 'OBRIGADO&AGRADECIMENTO BOA SAÚDE ATÉ LOGO TCHAU',
         options: [
           {
-            pt: 'Muito obrigado! Tchau!',
-            glosa: 'OBRIGADO&AGRADECIMENTO ATENDIMENTO TCHAU',
+            pt: 'Muito obrigado! Até logo!',
+            glosa: 'OBRIGADO&AGRADECIMENTO BOA SAÚDE ATÉ LOGO TCHAU',
             pharmacistNextNodes: ['FINALIZAR_SESSAO']
           },
           {
-            pt: 'Preciso de sacola e nota fiscal',
-            glosa: 'PRECISAR SACOLA NOTA&FISCAL',
-            pharmacistNextNodes: ['FINALIZAR_SESSAO']
-          },
-          {
-            pt: 'Quero pedir mais um item',
-            glosa: 'QUERER COMPRAR&DINHEIRO OUTRO PRODUTO',
-            pharmacistNextNodes: ['inicio', 'pedir_receita_ou_nome', 'perguntar_pagamento']
+            pt: 'Quero iniciar outro atendimento',
+            glosa: 'QUERER VOLTAR INÍCIO ATENDIMENTO',
+            pharmacistNextNodes: ['inicio']
           }
         ]
       }
@@ -1754,25 +1709,32 @@
     };
 
     const playerLoadOrder = ['top', 'opt0', 'opt1', 'opt2'];
-    let currentLoadingPlayerIdx = -1;
+    let hasTriggeredRemainingPlayers = false;
 
-    function loadNextPlayerInQueue() {
-      currentLoadingPlayerIdx++;
-      if (currentLoadingPlayerIdx >= playerLoadOrder.length) return;
-      const key = playerLoadOrder[currentLoadingPlayerIdx];
+    function loadPlayerIframe(key) {
       const p = players[key];
+      if (!p) return;
       const iframeEl = document.getElementById(p.id);
       if (iframeEl && !iframeEl.getAttribute('src')) {
-        iframeEl.setAttribute('src', iframeEl.getAttribute('data-src') || './player.html?v=6');
+        iframeEl.setAttribute('src', iframeEl.getAttribute('data-src') || './player.html?v=7');
       }
     }
 
-    function updateApiLoadingProgress() {
-      const list = Object.values(players);
-      const avg = list.reduce((acc, p) => acc + (p.loaded ? 1 : p.progress * 0.9), 0) / list.length;
-      const allLoaded = list.every((p) => p.loaded);
+    function loadRemainingPlayersFromRam() {
+      if (hasTriggeredRemainingPlayers) return;
+      hasTriggeredRemainingPlayers = true;
+      ['opt0', 'opt1', 'opt2'].forEach((k, idx) => {
+        setTimeout(() => loadPlayerIframe(k), idx * 45);
+      });
+    }
 
-      const computedPercent = allLoaded ? 100 : Math.min(96, Math.round(avg * 100));
+    function updateApiLoadingProgress() {
+      const topPlayer = players.top;
+      const readyToStart = topPlayer.loaded;
+
+      const computedPercent = readyToStart
+        ? 100
+        : Math.min(96, Math.round(topPlayer.progress * 95));
       visualProgress = Math.max(visualProgress, computedPercent);
 
       const boxEl = document.getElementById('apiLoadingBox');
@@ -1785,7 +1747,7 @@
       if (pctEl) pctEl.textContent = `${visualProgress}%`;
       if (fillEl) fillEl.style.width = `${visualProgress}%`;
 
-      if (allLoaded || visualProgress >= 100) {
+      if (readyToStart || visualProgress >= 100) {
         try {
           localStorage.setItem('farmalibras_engine_cached', '1');
         } catch {}
@@ -1798,16 +1760,15 @@
 
     // Progresso visual suave enquanto o motor WebGL inicia
     const warmupInterval = setInterval(() => {
-      const allLoaded = Object.values(players).every((p) => p.loaded);
-      if (allLoaded) {
+      if (players.top.loaded) {
         clearInterval(warmupInterval);
         return;
       }
-      if (visualProgress < 20) {
-        visualProgress += 2;
+      if (visualProgress < 35) {
+        visualProgress += 5;
         updateApiLoadingProgress();
       }
-    }, 300);
+    }, 180);
 
     function sendUnityMsg(iframeEl, obj, method, params) {
       if (!iframeEl || !iframeEl.contentWindow) return;
@@ -1912,8 +1873,8 @@
             initPlayerCharacter(key);
 
             if (!wasAlreadyLoaded) {
-              // Inicia o próximo bonequinho da fila após liberar a memória temporária deste
-              setTimeout(loadNextPlayerInQueue, 220);
+              // Assim que o 1º bonequinho colocou o motor na RAM e compilou o WASM, inicia os outros 3!
+              setTimeout(loadRemainingPlayersFromRam, 40);
             }
 
             if (p.pendingPlay) {
@@ -1926,7 +1887,7 @@
             if (p.retries < 1 && data.data !== 'webgl_unsupported') {
               p.retries++;
               setTimeout(() => {
-                const base = iframeEl.getAttribute('data-src') || './player.html?v=6';
+                const base = iframeEl.getAttribute('data-src') || './player.html?v=7';
                 iframeEl.setAttribute('src', base + (base.includes('?') ? '&' : '?') + 'retry=1');
               }, 900);
             } else if (!p.loaded) {
@@ -1934,7 +1895,7 @@
               p.loaded = true;
               p.progress = 1;
               updateApiLoadingProgress();
-              setTimeout(loadNextPlayerInQueue, 150);
+              setTimeout(loadRemainingPlayersFromRam, 100);
             }
           } else if (data.event === 'on_playing_state_change' && Array.isArray(data.data)) {
             const isPlaying = data.data[0] === 'True';
@@ -1985,14 +1946,83 @@
       });
     }
 
-    // Coreografia completa: Cima -> Esquerda (opt0) -> Meio (opt1) -> Direita (opt2) -> Todos Claros
-    function startTurnChoreography(node) {
+    let currentTopOverrideGlosa = null;
+    let customPosologyText = 'Tome 1 comprimido de 8 em 8 horas com água';
+    let customPosologyGlosa = 'TOMAR&PEGAR 1 COMPRIMIDO 8 HORA ÁGUA';
+    let customServicePriceText = '';
+
+    // Converte texto livre de posologia digitado pelo farmacêutico em glosa válida do VLibras
+    function buildGlosaFromPosologyText(text) {
+      const lower = (text || '').toLowerCase();
+      const tokens = ['EXPLICAR', 'COMO', 'USAR'];
+      if (lower.includes('pomada') || lower.includes('creme') || lower.includes('local')) {
+        tokens.push('USAR', 'POMADA');
+      } else if (lower.includes('gota')) {
+        tokens.push('TOMAR&PEGAR', 'GOTA');
+      } else {
+        tokens.push('TOMAR&PEGAR', 'COMPRIMIDO');
+      }
+      if (/\b1\b|um|uma/.test(lower)) tokens.push('1');
+      if (/\b2\b|duas|dois/.test(lower)) tokens.push('2');
+      if (/\b3\b|três|tres/.test(lower)) tokens.push('3');
+      if (/\b8\b|oito/.test(lower)) tokens.push('8', 'HORA');
+      else if (/12|doze/.test(lower)) tokens.push('2', 'VEZ', 'DIA');
+      else if (lower.includes('hora')) tokens.push('HORA');
+      if (lower.includes('dia')) tokens.push('DIA');
+      if (lower.includes('manh')) tokens.push('MANHÃ');
+      if (lower.includes('tarde')) tokens.push('TARDE');
+      if (lower.includes('noite') || lower.includes('dormir')) tokens.push('NOITE');
+      if (lower.includes('comer') || lower.includes('almo') || lower.includes('janta')) tokens.push('DEPOIS', 'COMER');
+      if (lower.includes('água') || lower.includes('agua')) tokens.push('ÁGUA');
+      tokens.push('VOCÊ', 'ENTENDER', 'CLARO');
+      return tokens.join(' ');
+    }
+
+    function selectPosologyPreset(ptText, glosaText, btnEl) {
+      customPosologyText = ptText;
+      customPosologyGlosa = 'EXPLICAR COMO USAR ' + glosaText + ' VOCÊ ENTENDER CLARO';
+      const inputEl = document.getElementById('customPosologyInput');
+      if (inputEl) inputEl.value = ptText;
+      const previewEl = document.getElementById('posologyBtnPreviewText');
+      if (previewEl) {
+        previewEl.textContent = `"Vou explicar como usar: ${ptText}. Ficou claro?"`;
+      }
+      document.querySelectorAll('.posology-chip').forEach((el) => el.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+    }
+
+    function onCustomPosologyInput(val) {
+      const clean = (val || '').trim();
+      customPosologyText = clean || 'Tome conforme orientado';
+      customPosologyGlosa = buildGlosaFromPosologyText(customPosologyText);
+      const previewEl = document.getElementById('posologyBtnPreviewText');
+      if (previewEl) {
+        previewEl.textContent = `"Vou explicar como usar: ${customPosologyText}. Ficou claro?"`;
+      }
+      document.querySelectorAll('.posology-chip').forEach((el) => el.classList.remove('active'));
+    }
+
+    function onServicePriceInput(val) {
+      customServicePriceText = (val || '').trim();
+      const previewEl = document.getElementById('serviceRoomBtnPreviewText');
+      if (previewEl) {
+        previewEl.textContent = customServicePriceText
+          ? `"Por favor, aguarde um instante na sala de atendimento. O valor é ${customServicePriceText}."`
+          : `"Por favor, aguarde um instante na sala de atendimento."`;
+      }
+    }
+
+    // Coreografia completa: Cima -> Esquerda (opt0) -> Meio (opt1) -> [Direita (opt2) se houver 3] -> Todos Claros
+    function startTurnChoreography(node, topGlosaOverride) {
       const seqId = ++activeSequenceId;
       clearAllPlayerCallbacks();
 
-      // 1º: Foco no bonequinho de cima (os 3 de baixo ficam escuros aguardando)
+      const topGlosa = topGlosaOverride || node.questionGlosa;
+      currentTopOverrideGlosa = topGlosa;
+
+      // 1º: Foco no bonequinho de cima (os de baixo ficam escuros aguardando)
       setLightingFocus('top');
-      playPlayerAndWait('top', node.questionGlosa, () => {
+      playPlayerAndWait('top', topGlosa, () => {
         if (seqId !== activeSequenceId) return;
 
         // 2º: Cima terminou -> Clareia o 1º da esquerda (opt0), demais continuam escuros
@@ -2000,12 +2030,23 @@
         playPlayerAndWait('opt0', node.options[0].glosa, () => {
           if (seqId !== activeSequenceId) return;
 
-          // 3º: Esquerda terminou -> Escurece o 1º e clareia o do meio (opt1)
+          if (!node.options[1]) {
+            setLightingFocus('all');
+            return;
+          }
+
+          // 3º: Esquerda terminou -> Escurece o 1º e clareia o 2º (opt1)
           setLightingFocus('opt1');
           playPlayerAndWait('opt1', node.options[1].glosa, () => {
             if (seqId !== activeSequenceId) return;
 
-            // 4º: Meio terminou -> Escurece o do meio e clareia o da direita (opt2)
+            // Se o nó tem apenas 2 opções, todos clareiam assim que o 2º termina!
+            if (!node.options[2]) {
+              setLightingFocus('all');
+              return;
+            }
+
+            // 4º: Se o nó tem 3 opções -> Escurece o do meio e clareia o da direita (opt2)
             setLightingFocus('opt2');
             playPlayerAndWait('opt2', node.options[2].glosa, () => {
               if (seqId !== activeSequenceId) return;
@@ -2047,15 +2088,38 @@
       const node = DIALOGUE_NODES[nodeKey];
       if (!node) return;
 
-      document.getElementById('deafScreenQuestionTitle').textContent = node.questionPt;
+      let questionPtToShow = node.questionPt;
+      let questionGlosaToPlay = node.questionGlosa;
 
-      node.options.forEach((opt, idx) => {
+      if (nodeKey === 'fase3_orientacao_posologia') {
+        questionPtToShow = `Vou explicar como usar: ${customPosologyText}. Ficou claro?`;
+        questionGlosaToPlay = customPosologyGlosa || node.questionGlosa;
+      } else if (nodeKey === 'trilha_c_aguardar_sala' && customServicePriceText) {
+        questionPtToShow = `Por favor, aguarde um instante na sala de atendimento. O valor é ${customServicePriceText}.`;
+        questionGlosaToPlay = 'POR_FAVOR ESPERAR SALA ATENDIMENTO VALOR QUANTO&VALOR CUSTAR';
+      }
+
+      document.getElementById('deafScreenQuestionTitle').textContent = questionPtToShow;
+
+      const optCount = node.options.length;
+      const gridEl = document.querySelector('.horizontal-options-grid');
+      if (gridEl) {
+        gridEl.style.gridTemplateColumns = `repeat(${optCount}, 1fr)`;
+      }
+
+      [0, 1, 2].forEach((idx) => {
+        const cardEl = document.getElementById(`optCard${idx}`);
         const txtEl = document.getElementById(`optText${idx}`);
-        if (txtEl) txtEl.textContent = opt.pt;
+        if (idx < optCount) {
+          if (cardEl) cardEl.style.display = 'flex';
+          if (txtEl) txtEl.textContent = node.options[idx].pt;
+        } else {
+          if (cardEl) cardEl.style.display = 'none';
+        }
       });
 
       showScreen('screenDeaf');
-      startTurnChoreography(node);
+      startTurnChoreography(node, questionGlosaToPlay);
     }
 
     // Repetir manualmente o sinal do bonequinho de cima
@@ -2065,13 +2129,13 @@
       const seqId = ++activeSequenceId;
       clearAllPlayerCallbacks();
       setLightingFocus('top');
-      playPlayerAndWait('top', node.questionGlosa, () => {
+      playPlayerAndWait('top', currentTopOverrideGlosa || node.questionGlosa, () => {
         if (seqId !== activeSequenceId) return;
         setLightingFocus('all');
       });
     }
 
-    // Repetir manualmente o sinal de um dos 3 bonequinhos de baixo
+    // Repetir manualmente o sinal de um dos bonequinhos de baixo
     function playOptionAvatar(optIndex) {
       const node = DIALOGUE_NODES[currentNodeKey];
       if (!node || !node.options[optIndex]) return;
@@ -2113,7 +2177,10 @@
         if (nextKey === 'FINALIZAR_SESSAO') {
           return `
             <button type="button" class="btn-pharmacist-question" onclick="resetToStartScreen()">
-              <span>Concluir atendimento e voltar ao início</span>
+              <div>
+                <div class="phase-badge" style="background:#dcfce7;color:#15803d;">Encerrar</div>
+                <div>Concluir atendimento e voltar ao início</div>
+              </div>
               <span class="arrow-icon-circle" style="background:#16a34a;">
                 <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
               </span>
@@ -2122,9 +2189,74 @@
         }
         const targetNode = DIALOGUE_NODES[nextKey];
         if (!targetNode) return '';
+
+        if (nextKey === 'fase3_orientacao_posologia') {
+          return `
+            <div class="pharmacist-custom-box">
+              <div class="pharmacist-custom-label">Fase 3 • Selecione ou digite a posologia para o bonequinho explicar:</div>
+              <div class="posology-chips">
+                <button type="button" class="posology-chip active" onclick="selectPosologyPreset('Tome 1 comprimido de 8 em 8 horas com água', 'TOMAR&PEGAR 1 COMPRIMIDO 8 HORA ÁGUA', this)">8 em 8h (1 comp.)</button>
+                <button type="button" class="posology-chip" onclick="selectPosologyPreset('Tome 1 comprimido 2 vezes ao dia (12 em 12h)', 'TOMAR&PEGAR 1 COMPRIMIDO 2 VEZ DIA', this)">12 em 12h (2x ao dia)</button>
+                <button type="button" class="posology-chip" onclick="selectPosologyPreset('Tome 1 vez por dia, depois de comer', 'TOMAR&PEGAR 1 VEZ DIA DEPOIS COMER', this)">1x ao dia após comer</button>
+                <button type="button" class="posology-chip" onclick="selectPosologyPreset('Tome 1 comprimido à noite, antes de dormir', 'TOMAR&PEGAR 1 COMPRIMIDO NOITE', this)">1 comp. à noite</button>
+                <button type="button" class="posology-chip" onclick="selectPosologyPreset('Use no local 2 vezes por dia, manhã e noite', 'USAR POMADA 2 VEZ DIA MANHÃ NOITE', this)">Pomada/Gotas 2x ao dia</button>
+              </div>
+              <div class="pharmacist-custom-row">
+                <input
+                  type="text"
+                  id="customPosologyInput"
+                  class="pharmacist-custom-input"
+                  value="${customPosologyText}"
+                  placeholder="Ou digite a posologia específica..."
+                  oninput="onCustomPosologyInput(this.value)"
+                />
+              </div>
+              <button type="button" class="btn-pharmacist-question" style="background:#ffffff;border-color:#0284c7;" onclick="openDeafTurnScreen('fase3_orientacao_posologia')">
+                <div>
+                  <div class="phase-badge">${targetNode.phase || 'Fase 3'}</div>
+                  <div id="posologyBtnPreviewText">"Vou explicar como usar: ${customPosologyText}. Ficou claro?"</div>
+                </div>
+                <span class="arrow-icon-circle">
+                  <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </span>
+              </button>
+            </div>
+          `;
+        }
+
+        if (nextKey === 'trilha_c_aguardar_sala') {
+          return `
+            <div class="pharmacist-custom-box">
+              <div class="pharmacist-custom-label">Fase 2 (Trilha C) • Informe o valor do serviço (opcional):</div>
+              <div class="pharmacist-custom-row">
+                <input
+                  type="text"
+                  id="servicePriceInput"
+                  class="pharmacist-custom-input"
+                  value="${customServicePriceText}"
+                  placeholder="Ex: R$ 15,00 (ou deixe em branco)"
+                  oninput="onServicePriceInput(this.value)"
+                />
+              </div>
+              <button type="button" class="btn-pharmacist-question" style="background:#ffffff;border-color:#0284c7;" onclick="openDeafTurnScreen('trilha_c_aguardar_sala')">
+                <div>
+                  <div class="phase-badge">${targetNode.phase || 'Fase 2 • Trilha C'}</div>
+                  <div id="serviceRoomBtnPreviewText">"Por favor, aguarde um instante na sala de atendimento.${customServicePriceText ? ' O valor é ' + customServicePriceText + '.' : ''}"</div>
+                </div>
+                <span class="arrow-icon-circle">
+                  <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </span>
+              </button>
+            </div>
+          `;
+        }
+
         return `
           <button type="button" class="btn-pharmacist-question" onclick="openDeafTurnScreen('${nextKey}')">
-            <span>"${targetNode.questionPt}"</span>
+            <div>
+              ${targetNode.phase ? `<div class="phase-badge">${targetNode.phase}</div>` : ''}
+              <div>"${targetNode.questionPt}"</div>
+            </div>
             <span class="arrow-icon-circle">
               <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </span>
@@ -2173,33 +2305,100 @@
       if (toast) toast.classList.remove('hidden');
     }
 
+    // Pré-carrega o motor do IndexedDB para a RAM e já dispara a compilação do WebAssembly
+    // no exato milissegundo em que a página abre (antes mesmo dos iframes terminarem de montar)
+    function prewarmVLibrasFromIndexedDB() {
+      try {
+        if (!window.indexedDB || location.protocol === 'file:') return;
+        if (!window.__vlibrasRamAssets) window.__vlibrasRamAssets = {};
+        if (!window.__vlibrasDBPromise) {
+          window.__vlibrasDBPromise = new Promise((resolve) => {
+            const req = indexedDB.open('FarmaLibrasVLibrasEngine_v2', 1);
+            req.onupgradeneeded = (ev) => {
+              const db = ev.target.result;
+              if (!db.objectStoreNames.contains('assets')) {
+                db.createObjectStore('assets');
+              }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+          });
+        }
+
+        const urls = [
+          'https://vlibras.gov.br/app/unity/playerweb.wasm.code.unityweb?v=7.12.2',
+          'https://vlibras.gov.br/app/unity/playerweb.data.unityweb?v=7.12.2',
+          'https://vlibras.gov.br/app/unity/playerweb.wasm.framework.unityweb?v=7.12.2'
+        ];
+
+        window.__vlibrasDBPromise.then((db) => {
+          if (!db) return;
+          urls.forEach((url) => {
+            if (window.__vlibrasRamAssets[url]) return;
+            const p = new Promise((resolve, reject) => {
+              const tx = db.transaction('assets', 'readonly');
+              const req = tx.objectStore('assets').get(url);
+              req.onsuccess = () => {
+                if (req.result && req.result.byteLength > 0) {
+                  const arr = new Uint8Array(req.result);
+                  if (url.includes('wasm.code') && !window.__vlibrasWasmModulePromise) {
+                    window.__vlibrasWasmModulePromise = WebAssembly.compile(arr).catch(() => {
+                      delete window.__vlibrasWasmModulePromise;
+                    });
+                  }
+                  resolve(arr);
+                } else {
+                  reject(new Error('not_cached'));
+                }
+              };
+              req.onerror = () => reject(new Error('db_error'));
+            });
+            p.catch(() => {
+              delete window.__vlibrasRamAssets[url];
+            });
+            window.__vlibrasRamAssets[url] = p;
+          });
+        });
+      } catch {}
+    }
+
+    let hasStartedLoadingIframes = false;
     function startLoadingVLibrasIframes() {
+      if (hasStartedLoadingIframes) return;
+      hasStartedLoadingIframes = true;
+
+      prewarmVLibrasFromIndexedDB();
+
       if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().catch(() => {});
       }
-      if (localStorage.getItem('farmalibras_engine_cached') === '1') {
+
+      const isAlreadyCached = localStorage.getItem('farmalibras_engine_cached') === '1';
+      if (isAlreadyCached) {
         const labelEl = document.getElementById('apiLoadingLabel');
         if (labelEl) labelEl.textContent = 'Iniciando Libras salvo no aparelho...';
       }
-      if (currentLoadingPlayerIdx === -1) {
-        loadNextPlayerInQueue();
+
+      // Carrega o bonequinho principal (Ícaro) imediatamente
+      loadPlayerIframe('top');
+
+      // Se já está salvo no aparelho, já inicia os outros 3 compartilhando a mesma RAM e WASM compilado
+      if (isAlreadyCached) {
+        setTimeout(loadRemainingPlayersFromRam, 50);
       }
     }
 
-    // Registra o Service Worker IMEDIATAMENTE (antes de carregar os iframes pesados do Unity)
-    // para que o Chrome/Android libere o evento nativo beforeinstallprompt sem atraso!
+    // Inicia imediatamente sem esperar pelo Service Worker
+    startLoadingVLibrasIframes();
+
+    // Registra o Service Worker em paralelo para liberar instalação PWA e cache offline
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       navigator.serviceWorker
         .register('./sw.js', { scope: './' })
         .then((reg) => {
           reg.update().catch(() => {});
         })
-        .catch(() => {})
-        .finally(() => {
-          setTimeout(startLoadingVLibrasIframes, 80);
-        });
-    } else {
-      window.addEventListener('DOMContentLoaded', startLoadingVLibrasIframes);
+        .catch(() => {});
     }
 
     window.addEventListener('DOMContentLoaded', () => {
