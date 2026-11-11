@@ -1,4 +1,4 @@
-const APP_CACHE = 'farmalibras-v8';
+const APP_CACHE = 'farmagesto-v9';
 const VLIBRAS_CACHE = 'farmalibras-vlibras-cache-v1';
 
 const APP_ASSETS = [

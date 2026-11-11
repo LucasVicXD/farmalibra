@@ -1,6 +1,6 @@
 {
-  "name": "FarmaLibras — Atendimento em Libras",
-  "short_name": "FarmaLibras",
+  "name": "FarmaGesto — Atendimento em Libras",
+  "short_name": "FarmaGesto",
   "description": "Aplicativo de acessibilidade em Libras (VLibras Gov.br) para atendimento em farmácias.",
   "start_url": "./",
   "scope": "./",
